@@ -50,8 +50,8 @@ public class LoginPage extends javax.swing.JFrame {
     //If password and user does not match that in the database, then return false, else return true if it does match.
     private boolean validateLogin(String username, String password) {
         String sql = "SELECT * FROM inventorydb.accounts WHERE accountName = ? AND accountPass = ?";
-        try {
-            PreparedStatement pstmt = conn.prepareStatement(sql);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql);){
+            
             pstmt.setString(1,username);
             pstmt.setString(2,password);
             

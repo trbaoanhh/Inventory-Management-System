@@ -5,6 +5,17 @@
 package com.mycompany.inventorymanagementproject;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.Vector;
+//import javax.swing.DefaultListModel;
+import javax.swing.JList;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
+//import javax.swing.table.TableModel;
 
 /**
  *
@@ -14,7 +25,46 @@ public class MainWindow extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MainWindow.class.getName());
     private Connection conn = DatabaseConnection.getConnection();
-
+    private DefaultTableModel prodTM = new DefaultTableModel();
+    //fill ProductList with products, sorted by the latest added product
+    private DefaultTableModel populateProductTable() {
+        String sql = "SELECT * FROM inventorydb.products ORDER BY dateAdded DESC";
+        
+        Vector colNames = new Vector();
+        colNames.add("Product ID");
+        colNames.add("Product Name");
+        colNames.add("Amount");
+        colNames.add("Date Added");
+        
+        prodTM.setColumnIdentifiers(colNames);
+//        Product[] rowData;
+                
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
+        
+            try(ResultSet rs = pstmt.executeQuery()) {
+                while(rs.next()) {
+                    int id = rs.getInt("itemID");
+                    String name = rs.getString("itemName");
+                    int amount = rs.getInt("itemAmount");
+                    Timestamp date = rs.getTimestamp("dateAdded");
+                    
+            
+                    Object[] rowData = {id,name,amount,date};
+                    prodTM.addRow(rowData);
+            
+                }
+            }      
+        
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        return prodTM;
+    }
+    
+   
+    
     /**
      * Creates new form MainWindowFrame
      */
@@ -26,6 +76,9 @@ public class MainWindow extends javax.swing.JFrame {
         // Retrieved 2025-11-25, License - CC BY-SA 3.0
 
         this.setLocationRelativeTo(null);//center of the screen
+        
+        DefaultTableModel dm = populateProductTable();
+        productTable.setModel(dm);
         
         
         
@@ -40,21 +93,27 @@ public class MainWindow extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jScrollPane1 = new javax.swing.JScrollPane();
-        ProductList = new javax.swing.JList<>();
         SearchField = new javax.swing.JTextField();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        productTable = new javax.swing.JTable();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        ProductList.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
-        });
-        jScrollPane1.setViewportView(ProductList);
-
         SearchField.setText("Search...");
         SearchField.setToolTipText("");
+
+        productTable.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        jScrollPane3.setViewportView(productTable);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -65,8 +124,8 @@ public class MainWindow extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(SearchField)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 445, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 247, Short.MAX_VALUE)))
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 240, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -74,9 +133,9 @@ public class MainWindow extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGap(12, 12, 12)
                 .addComponent(SearchField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 410, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(36, Short.MAX_VALUE))
+                .addGap(18, 18, 18)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(13, Short.MAX_VALUE))
         );
 
         pack();
@@ -108,8 +167,8 @@ public class MainWindow extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JList<String> ProductList;
     private javax.swing.JTextField SearchField;
-    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JTable productTable;
     // End of variables declaration//GEN-END:variables
 }

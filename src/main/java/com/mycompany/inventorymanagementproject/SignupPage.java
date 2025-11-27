@@ -42,8 +42,8 @@ public class SignupPage extends javax.swing.JFrame {
     //EFFECTS: takes in name,password,email and create a new row in the database
     private void createAccount(String name, String pass, String email) {
         String sql = "INSERT INTO inventorydb.accounts (accountName,accountPass,accountEmail) VALUES (?,?,?)";
-        try {
-            PreparedStatement pstmt = conn.prepareStatement(sql);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql);){
+            
             pstmt.setString(1,name);
             pstmt.setString(2,pass);
             pstmt.setString(3,email);
@@ -63,8 +63,7 @@ public class SignupPage extends javax.swing.JFrame {
     //EFFECTS: Check whether the email entered already exists in the database
     private boolean emailExist(String email) {
         String sql = "SELECT * FROM accounts WHERE accountEmail = ?";
-        try {
-            PreparedStatement pstmt = conn.prepareStatement(sql);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql);){
             pstmt.setString(1,email);
            
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -77,7 +76,7 @@ public class SignupPage extends javax.swing.JFrame {
         } catch (SQLException e){
             e.printStackTrace();
             return false;
-        }
+        } 
     }
     
     //EFFECTS: Returns true if all the fields are filled out, otherwise returns false
@@ -288,7 +287,9 @@ public class SignupPage extends javax.swing.JFrame {
             else {
                 createAccount(user,pass,email);
                 this.setVisible(false);
+              
                 new MainWindow().setVisible(true);
+                
             }
         }
         
@@ -343,6 +344,7 @@ public class SignupPage extends javax.swing.JFrame {
     private void LoginButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LoginButtonActionPerformed
         // TODO add your handling code here:
         this.setVisible(false);
+        
         new LoginPage().setVisible(true);
     }//GEN-LAST:event_LoginButtonActionPerformed
 
