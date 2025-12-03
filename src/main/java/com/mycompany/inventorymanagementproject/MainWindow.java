@@ -26,43 +26,9 @@ public class MainWindow extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MainWindow.class.getName());
     private Connection conn = DatabaseConnection.getConnection();
     private DefaultTableModel prodTM = new DefaultTableModel();
-    //fill ProductList with products, sorted by the latest added product
-    private DefaultTableModel populateProductTable() {
-        String sql = "SELECT * FROM inventorydb.products ORDER BY dateAdded DESC";
-        
-        Vector colNames = new Vector();
-        colNames.add("Product ID");
-        colNames.add("Product Name");
-        colNames.add("Amount");
-        colNames.add("Date Added");
-        
-        prodTM.setColumnIdentifiers(colNames);
-//        Product[] rowData;
-                
-        
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
-        
-            try(ResultSet rs = pstmt.executeQuery()) {
-                while(rs.next()) {
-                    int id = rs.getInt("itemID");
-                    String name = rs.getString("itemName");
-                    int amount = rs.getInt("itemAmount");
-                    Timestamp date = rs.getTimestamp("dateAdded");
-                    
-            
-                    Object[] rowData = {id,name,amount,date};
-                    prodTM.addRow(rowData);
-            
-                }
-            }      
-        
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        
-        return prodTM;
-    }
     
+    private populateTable x = new populateTable();
+    //fill ProductList with products, sorted by the latest added product
    
     
     /**
@@ -77,7 +43,7 @@ public class MainWindow extends javax.swing.JFrame {
 
         this.setLocationRelativeTo(null);//center of the screen
         
-        DefaultTableModel dm = populateProductTable();
+        DefaultTableModel dm = x.populateProductTable();
         productTable.setModel(dm);
         
         
@@ -96,6 +62,7 @@ public class MainWindow extends javax.swing.JFrame {
         SearchField = new javax.swing.JTextField();
         jScrollPane3 = new javax.swing.JScrollPane();
         productTable = new javax.swing.JTable();
+        newTableButton = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -115,6 +82,13 @@ public class MainWindow extends javax.swing.JFrame {
         ));
         jScrollPane3.setViewportView(productTable);
 
+        newTableButton.setText("New Table");
+        newTableButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                newTableButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -124,8 +98,10 @@ public class MainWindow extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(SearchField)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 240, Short.MAX_VALUE)))
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 538, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(newTableButton, javax.swing.GroupLayout.PREFERRED_SIZE, 156, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 6, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -134,12 +110,20 @@ public class MainWindow extends javax.swing.JFrame {
                 .addGap(12, 12, 12)
                 .addComponent(SearchField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(newTableButton, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(13, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void newTableButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newTableButtonActionPerformed
+        // TODO add your handling code here:
+        new tableWindow().setVisible(true);
+//        this.setVisible(false);
+    }//GEN-LAST:event_newTableButtonActionPerformed
 
     /**
      * @param args the command line arguments
@@ -169,6 +153,7 @@ public class MainWindow extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField SearchField;
     private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JButton newTableButton;
     private javax.swing.JTable productTable;
     // End of variables declaration//GEN-END:variables
 }

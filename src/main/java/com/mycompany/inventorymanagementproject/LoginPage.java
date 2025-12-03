@@ -199,6 +199,7 @@ public class LoginPage extends javax.swing.JFrame {
         if (validated) {
             this.setVisible(false);
             new MainWindow().setVisible(true);
+            this.dispose();
         } else {
             wrongAccountBox(); 
         }
