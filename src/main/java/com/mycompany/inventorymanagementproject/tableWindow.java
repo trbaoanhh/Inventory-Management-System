@@ -22,6 +22,8 @@ public class tableWindow extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(tableWindow.class.getName());
     private populateTable popu = new populateTable();
     
+    private boolean flag = false;
+    
     private Connection conn = DatabaseConnection.getConnection();
     
     private void clearList() {
@@ -69,15 +71,14 @@ public class tableWindow extends javax.swing.JFrame {
     
     private void addToList(String name, int amount) {
         String sql = "INSERT INTO inventorydb.currentList (Product,Amount) VALUES (?,?)";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql);){
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
             
             pstmt.setString(1,name);
             pstmt.setInt(2,amount);
             
             
             pstmt.executeUpdate();
-//            JOptionPane.showMessageDialog(this,"Account cuccessfully created","Account Created!",JOptionPane.INFORMATION_MESSAGE);
-            
+    
         } catch (SQLException e){
             e.printStackTrace();
         }
@@ -86,6 +87,18 @@ public class tableWindow extends javax.swing.JFrame {
         DefaultTableModel dm = populateList();
         currentProductList.setModel(dm);
     } 
+    
+    private void removeFromList(String name) {
+        String sql = "DELETE FROM invetorydb.currentList WHERE Product = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
+            pstmt.setString(1,name);
+            
+            pstmt.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
     /**
      * Creates new form tableWindow
      */
@@ -151,6 +164,19 @@ public class tableWindow extends javax.swing.JFrame {
         });
 
         searchProductField.setText("Search product...");
+        searchProductField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                searchProductFieldFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                searchProductFieldFocusLost(evt);
+            }
+        });
+        searchProductField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                searchProductFieldKeyTyped(evt);
+            }
+        });
 
         productTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -178,15 +204,28 @@ public class tableWindow extends javax.swing.JFrame {
         });
 
         removeButton.setText("Remove");
+        removeButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                removeButtonActionPerformed(evt);
+            }
+        });
 
         productNameField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         productNameField.setText("Product Name");
+        productNameField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                productNameFieldFocusGained(evt);
+            }
+        });
 
         productAmountField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         productAmountField.setText("Product Amount");
         productAmountField.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent evt) {
                 productAmountFieldFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                productAmountFieldFocusLost(evt);
             }
         });
 
@@ -203,6 +242,11 @@ public class tableWindow extends javax.swing.JFrame {
                 "Title 1", "Title 2", "Title 3", "Title 4"
             }
         ));
+        currentProductList.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                currentProductListMouseClicked(evt);
+            }
+        });
         jScrollPane3.setViewportView(currentProductList);
 
         totalAmountField.setText("Total Amount");
@@ -306,11 +350,24 @@ public class tableWindow extends javax.swing.JFrame {
     private void addButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addButtonActionPerformed
         // TODO add your handling code here:
         String n = productNameField.getText();
-        int a = Integer.parseInt(productAmountField.getText());
-        addToList(n,a);
+        String a = productAmountField.getText();
+        int amountint;
+        if (n.equals("Product Name") &&a.equals("Product Amount") ) {
+            JOptionPane.showMessageDialog(this, "Please Enter a Product Name and Product Amount","Input Error",JOptionPane.ERROR_MESSAGE);
+        }
+        else if (n.equals("Product Name")) {
+            JOptionPane.showMessageDialog(this, "Please Enter a Product Name","Input Error",JOptionPane.ERROR_MESSAGE);
+        } else if (a.equals("Product Amount")) {
+            JOptionPane.showMessageDialog(this, "Please Enter Product Amount","Input Error",JOptionPane.ERROR_MESSAGE);
+        }
+        else {
+            amountint = Integer.parseInt(a);
+            addToList(n,amountint);
+            productNameField.setText("Product Name");
+            productAmountField.setText("Product Amount");
+        }
         
-        productNameField.setText("Product Name");
-        productAmountField.setText("Product Amount");
+        
         
     }//GEN-LAST:event_addButtonActionPerformed
 
@@ -321,6 +378,100 @@ public class tableWindow extends javax.swing.JFrame {
             productAmountField.setText("");
         }
     }//GEN-LAST:event_productAmountFieldFocusGained
+
+    private void searchProductFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_searchProductFieldKeyTyped
+        // TODO add your handling code here: TEST IF SEARCH FIELD WORKS
+        String text = searchProductField.getText();
+        DefaultTableModel dm = new DefaultTableModel();
+        String sql = "SELECT * FROM inventorydb.products WHERE itemName LIKE '%?%'";
+        
+        Vector colNames = new Vector();
+        colNames.add("Product ID");
+        colNames.add("Product Name");
+        colNames.add("Amount");
+        colNames.add("Date Added");
+        
+        dm.setColumnIdentifiers(colNames);
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
+            pstmt.setString(1,text);
+            
+            
+            try(ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    int id = rs.getInt("itemID");
+                    String name = rs.getString("itemName");
+                    int amount = rs.getInt("itemAmount");
+                    Timestamp date = rs.getTimestamp("dateAdded");
+                    
+                    Object[] rowData = {id,name,amount,date};
+                    dm.addRow(rowData);
+                    currentProductList.setModel(dm);
+                    
+                    
+        
+                }
+            }
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }//GEN-LAST:event_searchProductFieldKeyTyped
+
+    private void searchProductFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_searchProductFieldFocusGained
+        // TODO add your handling code here:
+        String text = searchProductField.getText();
+        if (text.equals("Search product...")) {
+            searchProductField.setText("");
+        }
+    }//GEN-LAST:event_searchProductFieldFocusGained
+
+    private void searchProductFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_searchProductFieldFocusLost
+        // TODO add your handling code here:
+        String text = searchProductField.getText();
+        if (text.equals("")) {
+            searchProductField.setText("Search product...");
+        }
+    }//GEN-LAST:event_searchProductFieldFocusLost
+
+    private void removeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeButtonActionPerformed
+        // TODO add your handling code here:
+        String n = productNameField.getText();
+        removeFromList(n);
+        
+        productNameField.setText("Product Name");
+        productAmountField.setText("Product Amount");
+        
+    }//GEN-LAST:event_removeButtonActionPerformed
+
+    private void currentProductListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_currentProductListMouseClicked
+        // TODO add your handling code here:
+        
+        //Code gotten from: https://www.youtube.com/watch?v=3_QuB8heXkw
+        int row = currentProductList.getSelectedRow();
+        DefaultTableModel model = (DefaultTableModel)currentProductList.getModel();
+        productNameField.setText(model.getValueAt(row,0).toString());
+        flag = true;
+    }//GEN-LAST:event_currentProductListMouseClicked
+
+    private void productNameFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_productNameFieldFocusGained
+        // TODO add your handling code here:
+        String n = productNameField.getText();
+        if (n.equals("Product Name")) {
+            productNameField.setText("");
+        }
+        if (n.equals("")) {
+            productNameField.setText("Product name");
+        }
+    }//GEN-LAST:event_productNameFieldFocusGained
+
+    private void productAmountFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_productAmountFieldFocusLost
+        // TODO add your handling code here:
+        String text = productAmountField.getText();
+        if (text.equals("")) {
+            productAmountField.setText("Product Amount");
+        }
+    }//GEN-LAST:event_productAmountFieldFocusLost
 
     /**
      * @param args the command line arguments
