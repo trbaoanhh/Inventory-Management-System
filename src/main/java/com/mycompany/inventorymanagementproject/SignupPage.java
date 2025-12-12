@@ -49,7 +49,7 @@ public class SignupPage extends javax.swing.JFrame {
             pstmt.setString(3,email);
             
             pstmt.executeUpdate();
-            JOptionPane.showMessageDialog(this,"Account cuccessfully created","Account Created!",JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this,"Account cuccessfully created, please Login","Account Created!",JOptionPane.INFORMATION_MESSAGE);
             
         } catch (SQLException e){
             e.printStackTrace();
@@ -288,7 +288,7 @@ public class SignupPage extends javax.swing.JFrame {
                 createAccount(user,pass,email);
                 this.setVisible(false);
               
-                new MainWindow().setVisible(true);
+                new LoginPage().setVisible(true);
                 
             }
         }

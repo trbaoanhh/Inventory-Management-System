@@ -21,8 +21,7 @@ public class tableWindow extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(tableWindow.class.getName());
     private populateTable popu = new populateTable();
-    
-    private boolean flag = false;
+
     
     private Connection conn = DatabaseConnection.getConnection();
     
@@ -40,10 +39,11 @@ public class tableWindow extends javax.swing.JFrame {
     private DefaultTableModel populateList() {
         DefaultTableModel dm = new DefaultTableModel();
         
-        String sql = "SELECT * FROM inventorydb.currentList";
+        String sql = "SELECT * FROM currentList;";
         Vector colNames = new Vector();
         colNames.add("Product");
         colNames.add("Amount");
+        colNames.add("Total Cost");
         
         dm.setColumnIdentifiers(colNames);
         
@@ -54,10 +54,11 @@ public class tableWindow extends javax.swing.JFrame {
                 while(rs.next()) {
                     String n = rs.getString("Product");
                     int a = rs.getInt("Amount");
+                    double c = rs.getDouble("TotalCost");
                     
                     
             
-                    Object[] rowData = {n,a};
+                    Object[] rowData = {n,a,c};
                     dm.addRow(rowData);
             
                 }
@@ -69,23 +70,135 @@ public class tableWindow extends javax.swing.JFrame {
         return dm;
     }
     
-    private void addToList(String name, int amount) {
-        String sql = "INSERT INTO inventorydb.currentList (Product,Amount) VALUES (?,?)";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
+    private void addToList(String name, int amount) {//fix this so that if item already exists, we just update the total cost.
+        
+        //maybe use the sql below to find item price of the product (if it already exists)
+        //SELECT itemPrice FROM products WHERE EXISTS (SELECT Product FROM currentList WHERE currentList.Product = products.itemName);
+        //however, this wouldn't really work for a specific row.
+        
+        
+        String ifAlreadyExists = "SELECT COUNT(*) FROM currentList WHERE Product = ?"; //will return 0 if no such product is found
+        try (PreparedStatement stmt = conn.prepareStatement(ifAlreadyExists)) {
+            stmt.setString(1, name);
+            ResultSet rs = stmt.executeQuery();
             
-            pstmt.setString(1,name);
-            pstmt.setInt(2,amount);
+            //fetching price
+            int price = 0;
+            String getPrice = "SELECT itemPrice FROM products WHERE itemName = ?";
+            try (PreparedStatement stmt2 = conn.prepareStatement(getPrice)) {
+                stmt2.setString(1, name);
+                ResultSet rs2 = stmt2.executeQuery();
+
+                if (rs2.next()) {
+                    price = rs2.getInt("itemPrice");
+                }
+            }
+            
+            //fetching amount
+            int currentAmount = 0;
+            String getAmount = "SELECT Amount FROM currentList WHERE Product = ?";
+            try (PreparedStatement stmt2 = conn.prepareStatement(getAmount)) {
+                stmt2.setString(1, name);
+                ResultSet rs2 = stmt2.executeQuery();
+
+                if (rs2.next()) {
+                    currentAmount = rs2.getInt("Amount");
+                }
+            }
             
             
-            pstmt.executeUpdate();
-    
-        } catch (SQLException e){
-            e.printStackTrace();
+            if (rs.next()) {
+                //if the producvt is already available, then keep everything the same and only update the total cost.
+                // I will do this by fetching the price using a seperate query, and then updating the table.
+                if (rs.getInt("COUNT(*)") != 0) {
+                    
+                    
+                    //updating
+                    String update = "UPDATE currentList SET TotalCost = ? * ?, Amount = ?+? WHERE Product = ?";
+                    try (PreparedStatement stmt2 = conn.prepareStatement(update)) {
+                        stmt2.setInt(1, amount);
+                        stmt2.setInt(2,price);
+                        stmt2.setInt(3, amount);
+                        stmt2.setInt(4, currentAmount);
+                        stmt2.setString(5, name);
+                        stmt2.executeUpdate();
+                        DefaultTableModel dm =populateList();
+                        currentProductList.setModel(dm);
+                    }
+                    
+                }
+                //if product is not available, I will add a new row to currentList
+                else if (rs.getInt("COUNT(*)") ==0) {
+                    String insert = "INSERT INTO inventorydb.currentList (Product,Amount,TotalCost) VALUES (?,?,?)";
+                    try (PreparedStatement pstmt = conn.prepareStatement(insert)){
+
+                        pstmt.setString(1,name);
+                        pstmt.setInt(2,amount);
+                        pstmt.setInt(3,price*amount);
+                        pstmt.executeUpdate();
+                        DefaultTableModel dm =populateList();
+                        currentProductList.setModel(dm);
+                    } 
+                }
+            }
+            
+            
+        } catch (SQLException ex) {
+            System.getLogger(tableWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
         }
         
+       
         
-        DefaultTableModel dm = populateList();
-        currentProductList.setModel(dm);
+        
+//        
+//        
+//        
+//        int price = 0;
+//        //Check if product is already available in the currentList
+//        String sql1 = "SELECT ? from currentList";
+//        try (PreparedStatement stmt = conn.prepareStatement(sql1)) {
+//            stmt.setString(1,name);
+//            ResultSet rs = stmt.executeQuery();    
+//        
+//            if (rs.next()) {//if the product IS already available in currentList
+//                String sql2 = "UPDATE currentList JOIN products ON products.itemName = currentList.Product SET currentList.TotalCost = currentList.Amount * products.itemPrice"; //DO THISSS
+//                
+//                try (PreparedStatement stmt2 = conn.prepareStatement(sql2)) {
+////                    ResultSet rs2 = stmt2.executeQuery();
+////                    if (rs2.next()) {
+////                        price = rs2.getInt("itemPrice");
+////                    }
+////                    DefaultTableModel dm =populateList();
+////                    currentProductList.setModel(dm);
+//                }
+//            } else {//if product is not in list
+//                String sql2 = "SELECT * FROM products";
+//                try (PreparedStatement stmt2 = conn.prepareStatement(sql2)) {
+//                    try (ResultSet rs2 = stmt2.executeQuery()) {
+//                        if (rs2.next()) {
+//                            price = rs2.getInt("itemPrice");
+//                        }
+//                    }
+//                }
+//                String sql = "INSERT INTO inventorydb.currentList (Product,Amount,TotalCost) VALUES (?,?,?)";
+//                try (PreparedStatement pstmt = conn.prepareStatement(sql)){
+//
+//                    pstmt.setString(1,name);
+//                    pstmt.setInt(2,amount);
+//                    pstmt.setInt(3,price*amount);
+//            
+//            
+//                    pstmt.executeUpdate();
+//    
+//                } catch (SQLException e){
+//                    e.printStackTrace();
+//                }
+//                    }
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//        }
+//        DefaultTableModel dm = populateList();
+//        currentProductList.setModel(dm);
     } 
     
     private void removeFromList(String name) {
@@ -98,6 +211,25 @@ public class tableWindow extends javax.swing.JFrame {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+    
+    private double totalUpList() {
+        
+        String sql = "SELECT itemPrice FROM currentList";
+        int total = 0;
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while(rs.next()) {
+                    total += rs.getInt("TotalCost");
+                }
+            }
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return total;
     }
     /**
      * Creates new form tableWindow
@@ -216,10 +348,14 @@ public class tableWindow extends javax.swing.JFrame {
             public void focusGained(java.awt.event.FocusEvent evt) {
                 productNameFieldFocusGained(evt);
             }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                productNameFieldFocusLost(evt);
+            }
         });
 
         productAmountField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        productAmountField.setText("Product Amount");
+        productAmountField.setText("Product Ordered");
+        productAmountField.setToolTipText("");
         productAmountField.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent evt) {
                 productAmountFieldFocusGained(evt);
@@ -352,21 +488,23 @@ public class tableWindow extends javax.swing.JFrame {
         String n = productNameField.getText();
         String a = productAmountField.getText();
         int amountint;
-        if (n.equals("Product Name") &&a.equals("Product Amount") ) {
-            JOptionPane.showMessageDialog(this, "Please Enter a Product Name and Product Amount","Input Error",JOptionPane.ERROR_MESSAGE);
+        if (n.equals("Product Name") &&a.equals("Product Ordered") ) {
+            JOptionPane.showMessageDialog(this, "Please Enter a Product Name and Product Ordered","Input Error",JOptionPane.ERROR_MESSAGE);
         }
         else if (n.equals("Product Name")) {
             JOptionPane.showMessageDialog(this, "Please Enter a Product Name","Input Error",JOptionPane.ERROR_MESSAGE);
-        } else if (a.equals("Product Amount")) {
-            JOptionPane.showMessageDialog(this, "Please Enter Product Amount","Input Error",JOptionPane.ERROR_MESSAGE);
+        } else if (a.equals("Product Ordered")) {
+            JOptionPane.showMessageDialog(this, "Please Enter Product Ordered","Input Error",JOptionPane.ERROR_MESSAGE);
         }
         else {
             amountint = Integer.parseInt(a);
+//            clearList();
             addToList(n,amountint);
             productNameField.setText("Product Name");
-            productAmountField.setText("Product Amount");
+            productAmountField.setText("Product Ordered");
         }
         
+        totalCostField.setText(Double.toString(this.totalUpList()));
         
         
     }//GEN-LAST:event_addButtonActionPerformed
@@ -374,7 +512,7 @@ public class tableWindow extends javax.swing.JFrame {
     private void productAmountFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_productAmountFieldFocusGained
         // TODO add your handling code here:
         String text = productAmountField.getText();
-        if (text.equals("Product Amount")) {
+        if (text.equals("Product Ordered")) {
             productAmountField.setText("");
         }
     }//GEN-LAST:event_productAmountFieldFocusGained
@@ -407,9 +545,6 @@ public class tableWindow extends javax.swing.JFrame {
                     Object[] rowData = {id,name,amount,date};
                     dm.addRow(rowData);
                     currentProductList.setModel(dm);
-                    
-                    
-        
                 }
             }
             
@@ -437,10 +572,18 @@ public class tableWindow extends javax.swing.JFrame {
     private void removeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeButtonActionPerformed
         // TODO add your handling code here:
         String n = productNameField.getText();
-        removeFromList(n);
+        String a = productAmountField.getText();
         
-        productNameField.setText("Product Name");
-        productAmountField.setText("Product Amount");
+        if (n.equals("Product Name") &&a.equals("Product Ordered") ) {
+            JOptionPane.showMessageDialog(this, "No Product To Remove","Remove Error",JOptionPane.ERROR_MESSAGE);
+        }else if (n.equals("Product Name") ||a.equals("Product Ordered") ) {
+            JOptionPane.showMessageDialog(this, "Please select an available product from the available ","Remove Error",JOptionPane.ERROR_MESSAGE);
+        } else {
+            removeFromList(n);
+        
+            productNameField.setText("Product Name");
+            productAmountField.setText("Product Ordered");
+        }
         
     }//GEN-LAST:event_removeButtonActionPerformed
 
@@ -451,7 +594,7 @@ public class tableWindow extends javax.swing.JFrame {
         int row = currentProductList.getSelectedRow();
         DefaultTableModel model = (DefaultTableModel)currentProductList.getModel();
         productNameField.setText(model.getValueAt(row,0).toString());
-        flag = true;
+        productAmountField.setText(model.getValueAt(row,1).toString());
     }//GEN-LAST:event_currentProductListMouseClicked
 
     private void productNameFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_productNameFieldFocusGained
@@ -460,18 +603,23 @@ public class tableWindow extends javax.swing.JFrame {
         if (n.equals("Product Name")) {
             productNameField.setText("");
         }
-        if (n.equals("")) {
-            productNameField.setText("Product name");
-        }
     }//GEN-LAST:event_productNameFieldFocusGained
 
     private void productAmountFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_productAmountFieldFocusLost
         // TODO add your handling code here:
         String text = productAmountField.getText();
         if (text.equals("")) {
-            productAmountField.setText("Product Amount");
+            productAmountField.setText("Product Ordered");
         }
     }//GEN-LAST:event_productAmountFieldFocusLost
+
+    private void productNameFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_productNameFieldFocusLost
+        // TODO add your handling code here:
+        String n = productNameField.getText();
+        if (n.equals("")) {
+            productNameField.setText("Product Name");
+        }
+    }//GEN-LAST:event_productNameFieldFocusLost
 
     /**
      * @param args the command line arguments

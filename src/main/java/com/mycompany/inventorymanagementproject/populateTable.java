@@ -30,6 +30,7 @@ public class populateTable {
         colNames.add("Product Name");
         colNames.add("Amount");
         colNames.add("Date Added");
+        colNames.add("Product Price");
         
         prodTM.setColumnIdentifiers(colNames);
 //        Product[] rowData;
@@ -43,9 +44,10 @@ public class populateTable {
                     String name = rs.getString("itemName");
                     int amount = rs.getInt("itemAmount");
                     Timestamp date = rs.getTimestamp("dateAdded");
+                    double price = rs.getDouble("itemPrice");
                     
             
-                    Object[] rowData = {id,name,amount,date};
+                    Object[] rowData = {id,name,amount,date,price};
                     prodTM.addRow(rowData);
             
                 }
