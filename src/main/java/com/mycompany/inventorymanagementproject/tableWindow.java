@@ -70,135 +70,97 @@ public class tableWindow extends javax.swing.JFrame {
         return dm;
     }
     
-    private void addToList(String name, int amount) {//fix this so that if item already exists, we just update the total cost.
+    private void addToList(String name, int amount) {
+        String setSafetyModeOff = "SET SQL_SAFE_UPDATES = 0;";
+        try (PreparedStatement stmt = conn.prepareStatement(setSafetyModeOff)) {
+            stmt.executeUpdate();
+        } catch (SQLException ex) { 
+            System.getLogger(tableWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
         
-        //maybe use the sql below to find item price of the product (if it already exists)
-        //SELECT itemPrice FROM products WHERE EXISTS (SELECT Product FROM currentList WHERE currentList.Product = products.itemName);
-        //however, this wouldn't really work for a specific row.
-        
-        
-        String ifAlreadyExists = "SELECT COUNT(*) FROM currentList WHERE Product = ?"; //will return 0 if no such product is found
+        String ifAlreadyExists = "SELECT COUNT(*) AS cnt FROM products WHERE itemName = ?"; //will return 0 if no such product is found in inventory
         try (PreparedStatement stmt = conn.prepareStatement(ifAlreadyExists)) {
             stmt.setString(1, name);
             ResultSet rs = stmt.executeQuery();
             
-            //fetching price
-            int price = 0;
-            String getPrice = "SELECT itemPrice FROM products WHERE itemName = ?";
-            try (PreparedStatement stmt2 = conn.prepareStatement(getPrice)) {
-                stmt2.setString(1, name);
-                ResultSet rs2 = stmt2.executeQuery();
-
-                if (rs2.next()) {
-                    price = rs2.getInt("itemPrice");
-                }
-            }
             
-            //fetching amount
             int currentAmount = 0;
-            String getAmount = "SELECT Amount FROM currentList WHERE Product = ?";
-            try (PreparedStatement stmt2 = conn.prepareStatement(getAmount)) {
-                stmt2.setString(1, name);
-                ResultSet rs2 = stmt2.executeQuery();
-
-                if (rs2.next()) {
-                    currentAmount = rs2.getInt("Amount");
-                }
-            }
-            
-            
+            double price = 0;
             if (rs.next()) {
-                //if the producvt is already available, then keep everything the same and only update the total cost.
-                // I will do this by fetching the price using a seperate query, and then updating the table.
-                if (rs.getInt("COUNT(*)") != 0) {
-                    
-                    
-                    //updating
-                    String update = "UPDATE currentList SET TotalCost = ? * ?, Amount = ?+? WHERE Product = ?";
-                    try (PreparedStatement stmt2 = conn.prepareStatement(update)) {
-                        stmt2.setInt(1, amount);
-                        stmt2.setInt(2,price);
-                        stmt2.setInt(3, amount);
-                        stmt2.setInt(4, currentAmount);
-                        stmt2.setString(5, name);
-                        stmt2.executeUpdate();
-                        DefaultTableModel dm =populateList();
-                        currentProductList.setModel(dm);
+                //fetching price + amount if product already exists in database
+                if (rs.getInt("cnt") > 0) {
+                    String getPrice = "SELECT itemPrice FROM products WHERE itemName = ?";
+                    try (PreparedStatement stmt2 = conn.prepareStatement(getPrice)) {
+                        stmt2.setString(1, name);
+                        ResultSet rs2 = stmt2.executeQuery();
+
+                        if (rs2.next()) {
+                            price = rs2.getDouble("itemPrice");
+                        }
                     }
                     
-                }
-                //if product is not available, I will add a new row to currentList
-                else if (rs.getInt("COUNT(*)") ==0) {
-                    String insert = "INSERT INTO inventorydb.currentList (Product,Amount,TotalCost) VALUES (?,?,?)";
-                    try (PreparedStatement pstmt = conn.prepareStatement(insert)){
+                } 
+                
+                
+                //price != 0 means that the product exists in database
+                if (price != 0) {
+                    
+                    //have to check if them item already exists in currentList
+                    String existInList = "SELECT COUNT(*) AS count FROM currentList WHERE Product = ?";
+                    try (PreparedStatement stmt2 = conn.prepareStatement(existInList)) {
+                        stmt2.setString(1, name);
+                        ResultSet rs2 = stmt2.executeQuery();
+                        
+                        //if product is available in stock, but is not in currentList yet then we add into the list
+                        if (rs2.next()) {
+                            if (rs2.getInt("count")==0){
+                                String update = "INSERT currentList VALUES (?,?,?)";
+                                try(PreparedStatement stmt3 = conn.prepareStatement(update)) {
+                                    stmt3.setString(1, name);
+                                    stmt3.setInt(2,amount);
+                                    stmt3.setDouble(3,price*amount);
+                                    stmt3.executeUpdate();
+                                    DefaultTableModel dm =populateList();
+                                    currentProductList.setModel(dm);
 
-                        pstmt.setString(1,name);
-                        pstmt.setInt(2,amount);
-                        pstmt.setInt(3,price*amount);
-                        pstmt.executeUpdate();
-                        DefaultTableModel dm =populateList();
-                        currentProductList.setModel(dm);
-                    } 
+                                }
+                            }
+                            //if product is avaialble in stock and is already in currentList
+                            else {
+                                String getAmount = "SELECT Amount FROM currentList WHERE Product = ?";
+                                try (PreparedStatement stmt3 = conn.prepareStatement(getAmount)) {
+                                    stmt3.setString(1, name);
+                                    ResultSet rs3 = stmt3.executeQuery();
+
+                                    if (rs3.next()) {
+                                        currentAmount = rs3.getInt("Amount");
+                                    }
+                                }
+                                int newAmount = currentAmount + amount;
+                                double newTotalCost = newAmount * price;
+                                String update = "UPDATE currentList SET TotalCost = ?, Amount = ?  WHERE Product = ?";
+                                try (PreparedStatement stmt3 = conn.prepareStatement(update)) {
+                                    stmt3.setDouble(1,newTotalCost);
+                                    stmt3.setInt(2, newAmount);
+                                    stmt3.setString(3, name);
+                                    stmt3.executeUpdate();
+                                    DefaultTableModel dm =populateList();
+                                    currentProductList.setModel(dm);
+
+                                }
+                            }
+                        }
+                    }
+   
+                }//if product does not already exist
+                else {
+                    JOptionPane.showMessageDialog(this, "This product does not exist in storage","NO PRODUCT",JOptionPane.ERROR_MESSAGE);
                 }
+                
             }
-            
-            
         } catch (SQLException ex) {
             System.getLogger(tableWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
-        }
-        
-       
-        
-        
-//        
-//        
-//        
-//        int price = 0;
-//        //Check if product is already available in the currentList
-//        String sql1 = "SELECT ? from currentList";
-//        try (PreparedStatement stmt = conn.prepareStatement(sql1)) {
-//            stmt.setString(1,name);
-//            ResultSet rs = stmt.executeQuery();    
-//        
-//            if (rs.next()) {//if the product IS already available in currentList
-//                String sql2 = "UPDATE currentList JOIN products ON products.itemName = currentList.Product SET currentList.TotalCost = currentList.Amount * products.itemPrice"; //DO THISSS
-//                
-//                try (PreparedStatement stmt2 = conn.prepareStatement(sql2)) {
-////                    ResultSet rs2 = stmt2.executeQuery();
-////                    if (rs2.next()) {
-////                        price = rs2.getInt("itemPrice");
-////                    }
-////                    DefaultTableModel dm =populateList();
-////                    currentProductList.setModel(dm);
-//                }
-//            } else {//if product is not in list
-//                String sql2 = "SELECT * FROM products";
-//                try (PreparedStatement stmt2 = conn.prepareStatement(sql2)) {
-//                    try (ResultSet rs2 = stmt2.executeQuery()) {
-//                        if (rs2.next()) {
-//                            price = rs2.getInt("itemPrice");
-//                        }
-//                    }
-//                }
-//                String sql = "INSERT INTO inventorydb.currentList (Product,Amount,TotalCost) VALUES (?,?,?)";
-//                try (PreparedStatement pstmt = conn.prepareStatement(sql)){
-//
-//                    pstmt.setString(1,name);
-//                    pstmt.setInt(2,amount);
-//                    pstmt.setInt(3,price*amount);
-//            
-//            
-//                    pstmt.executeUpdate();
-//    
-//                } catch (SQLException e){
-//                    e.printStackTrace();
-//                }
-//                    }
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//        }
-//        DefaultTableModel dm = populateList();
-//        currentProductList.setModel(dm);
+        }        
     } 
     
     private void removeFromList(String name) {
@@ -213,16 +175,16 @@ public class tableWindow extends javax.swing.JFrame {
         }
     }
     
-    private double totalUpList() {
+    private double totalCostUpdate() {
         
-        String sql = "SELECT itemPrice FROM currentList";
-        int total = 0;
+        String sql = "SELECT SUM(TotalCost) as total FROM currentList;";
+        double total = 0;
         
         try (PreparedStatement pstmt = conn.prepareStatement(sql)){
             
             try (ResultSet rs = pstmt.executeQuery()) {
                 while(rs.next()) {
-                    total += rs.getInt("TotalCost");
+                    total += rs.getDouble("total");
                 }
             }
             
@@ -488,6 +450,22 @@ public class tableWindow extends javax.swing.JFrame {
         String n = productNameField.getText();
         String a = productAmountField.getText();
         int amountint;
+        double cost = 0;
+        
+        //check if input into product ordered is integer or not
+        // Source - https://stackoverflow.com/a
+        // Posted by Ruchira Gayan Ranaweera
+        // Retrieved 2025-12-15, License - CC BY-SA 3.0
+
+         try {
+           int x = Integer.parseInt(a); 
+           System.out.println("Valid input");
+         }catch(NumberFormatException e) {
+           JOptionPane.showMessageDialog(this, "Please Enter ONLY Integer Values Into Products Ordered","Input Error",JOptionPane.ERROR_MESSAGE); 
+           productAmountField.setText("");
+         } 
+
+        
         if (n.equals("Product Name") &&a.equals("Product Ordered") ) {
             JOptionPane.showMessageDialog(this, "Please Enter a Product Name and Product Ordered","Input Error",JOptionPane.ERROR_MESSAGE);
         }
@@ -495,16 +473,15 @@ public class tableWindow extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Please Enter a Product Name","Input Error",JOptionPane.ERROR_MESSAGE);
         } else if (a.equals("Product Ordered")) {
             JOptionPane.showMessageDialog(this, "Please Enter Product Ordered","Input Error",JOptionPane.ERROR_MESSAGE);
-        }
+        } 
         else {
             amountint = Integer.parseInt(a);
-//            clearList();
             addToList(n,amountint);
             productNameField.setText("Product Name");
             productAmountField.setText("Product Ordered");
         }
         
-        totalCostField.setText(Double.toString(this.totalUpList()));
+        totalCostField.setText(Double.toString(totalCostUpdate()));
         
         
     }//GEN-LAST:event_addButtonActionPerformed
