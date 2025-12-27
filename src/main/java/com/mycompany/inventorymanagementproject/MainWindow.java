@@ -4,19 +4,22 @@
  */
 package com.mycompany.inventorymanagementproject;
 
+import java.awt.Dimension;
+import java.awt.event.WindowEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.awt.event.WindowAdapter;
+import javax.swing.JFrame;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.Vector;
 //import javax.swing.DefaultListModel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
-//import javax.swing.table.TableModel;
-
 /**
  *
  * @author tranb
@@ -25,10 +28,10 @@ public class MainWindow extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MainWindow.class.getName());
     private Connection conn = DatabaseConnection.getConnection();
-    private DefaultTableModel prodTM = new DefaultTableModel();
+    private DefaultTableModel dm;
     
     private populateTable x = new populateTable();
-    //fill ProductList with products, sorted by the latest added product
+   //fill ProductList with products, sorted by the latest added product
    
     
     /**
@@ -42,12 +45,75 @@ public class MainWindow extends javax.swing.JFrame {
         // Retrieved 2025-11-25, License - CC BY-SA 3.0
 
         this.setLocationRelativeTo(null);//center of the screen
+        AddProductWindow.setPreferredSize(new Dimension(240,300));
+        AddProductWindow.pack();
+        AddProductWindow.setLocationRelativeTo(null);
         
-        DefaultTableModel dm = x.populateProductTable();
+        
+        dm = x.populateProductTable();
         productTable.setModel(dm);
+    }
+    
+    private void clearTable() {
+        dm.setRowCount(0);
+        productTable.setModel(dm);
+    }
+    
+    private boolean productExists(String name) {
+        String ifAlreadyExists = "SELECT itemAmount FROM products WHERE itemName = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(ifAlreadyExists)) {
+            stmt.setString(1, name);
+            try(ResultSet rs = stmt.executeQuery()){
+                if (rs.next()) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } 
+        } catch (SQLException e) {
+            System.getLogger(tableWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, e);
+        }
+        return false;
+    }
+    
+    private void addToInventory(String name, int amount, double price) {
+        String setSafetyModeOff = "SET SQL_SAFE_UPDATES = 0;";
+        try (PreparedStatement stmt = conn.prepareStatement(setSafetyModeOff)) {
+            stmt.executeUpdate();
+        } catch (SQLException ex) { 
+            System.getLogger(tableWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
         
-        
-        
+        //find if the product is already in the inventory or not.
+        //SQL statement will return 0 if no such product is found in inventory
+        String ifAlreadyExists = "SELECT itemAmount FROM products WHERE itemName = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(ifAlreadyExists)) {
+            stmt.setString(1, name);
+            try(ResultSet rs = stmt.executeQuery()){
+  
+            if (rs.next()) {
+                // Product exists ==> update amount
+                    int currentAmount = rs.getInt("itemAmount");
+                    String updateSql = "UPDATE products SET itemAmount = ? WHERE itemName = ?";
+                    try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                        updateStmt.setInt(1, currentAmount + amount);
+                        updateStmt.setString(2, name);
+                        updateStmt.executeUpdate();
+                    }
+            } else {
+                // Product does not exist ==> insert new row
+                    String insertSql = "INSERT INTO products (itemName, itemAmount, itemPrice, dateAdded) VALUES (?,?,?,NOW())";
+                    try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+                        insertStmt.setString(1, name);
+                        insertStmt.setInt(2, amount);
+                        insertStmt.setDouble(3, price);
+                        insertStmt.executeUpdate();
+                    }
+                } 
+            }
+        } catch (SQLException ex) {
+            System.getLogger(tableWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }        
     }
 
     /**
@@ -59,13 +125,112 @@ public class MainWindow extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        AddProductWindow = new javax.swing.JDialog();
+        insertButton = new javax.swing.JButton();
+        nameTextField = new javax.swing.JTextField();
+        amountTextField = new javax.swing.JTextField();
+        backButton = new javax.swing.JButton();
+        priceTextField = new javax.swing.JTextField();
         SearchField = new javax.swing.JTextField();
         jScrollPane3 = new javax.swing.JScrollPane();
         productTable = new javax.swing.JTable();
         newTableButton = new javax.swing.JButton();
         addProductButton = new javax.swing.JButton();
 
+        AddProductWindow.addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosed(java.awt.event.WindowEvent evt) {
+                AddProductWindowWindowClosed(evt);
+            }
+        });
+
+        insertButton.setText("Insert");
+        insertButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                insertButtonActionPerformed(evt);
+            }
+        });
+
+        nameTextField.setText("Product Name");
+        nameTextField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                nameTextFieldFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                nameTextFieldFocusLost(evt);
+            }
+        });
+
+        amountTextField.setText("Product Amount");
+        amountTextField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                amountTextFieldFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                amountTextFieldFocusLost(evt);
+            }
+        });
+
+        backButton.setText("Back");
+        backButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                backButtonActionPerformed(evt);
+            }
+        });
+
+        priceTextField.setText("Product Price");
+        priceTextField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                priceTextFieldFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                priceTextFieldFocusLost(evt);
+            }
+        });
+
+        javax.swing.GroupLayout AddProductWindowLayout = new javax.swing.GroupLayout(AddProductWindow.getContentPane());
+        AddProductWindow.getContentPane().setLayout(AddProductWindowLayout);
+        AddProductWindowLayout.setHorizontalGroup(
+            AddProductWindowLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(AddProductWindowLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(backButton, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, AddProductWindowLayout.createSequentialGroup()
+                .addGap(0, 20, Short.MAX_VALUE)
+                .addGroup(AddProductWindowLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(priceTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(amountTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(nameTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(20, 20, 20))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, AddProductWindowLayout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(insertButton)
+                .addGap(83, 83, 83))
+        );
+        AddProductWindowLayout.setVerticalGroup(
+            AddProductWindowLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, AddProductWindowLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(backButton)
+                .addGap(18, 18, 18)
+                .addComponent(nameTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(amountTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(priceTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(insertButton)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        addWindowFocusListener(new java.awt.event.WindowFocusListener() {
+            public void windowGainedFocus(java.awt.event.WindowEvent evt) {
+                formWindowGainedFocus(evt);
+            }
+            public void windowLostFocus(java.awt.event.WindowEvent evt) {
+            }
+        });
 
         SearchField.setText("Search...");
         SearchField.setToolTipText("");
@@ -140,8 +305,124 @@ public class MainWindow extends javax.swing.JFrame {
 
     private void addProductButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addProductButtonActionPerformed
         // TODO add your handling code here:
+//        this.setVisible(false);
+//        new AddProductWindow().setVisible(true);
+          AddProductWindow.setVisible(true);
+//          this.setVisible(false);
+        
     }//GEN-LAST:event_addProductButtonActionPerformed
 
+    private void formWindowGainedFocus(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowGainedFocus
+
+    }//GEN-LAST:event_formWindowGainedFocus
+
+    private void insertButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_insertButtonActionPerformed
+        // TODO add your handling code here:
+        String n = nameTextField.getText();
+        String a = amountTextField.getText();
+        String p = priceTextField.getText();
+        if (n.equals("Product Name") || a.equals("Product Amount")) {
+            JOptionPane.showMessageDialog(AddProductWindow, "Please fill out all fields.");
+            
+            return;
+        }
+        int amount;
+        double price = 0;
+        //check if input into product ordered is integer or not
+        // Source - https://stackoverflow.com/a
+        // Posted by Ruchira Gayan Ranaweera
+        // Retrieved 2025-12-15, License - CC BY-SA 3.0
+
+        try {
+            amount = Integer.parseInt(a);
+            if (!productExists(n)) {
+                price = Double.parseDouble(p);
+            }
+        }catch(NumberFormatException e) {
+            JOptionPane.showMessageDialog(AddProductWindow, "Please Enter ONLY Integer Values Into Product Ordered And Double Values Into Product Price","Input Error",JOptionPane.ERROR_MESSAGE);
+            nameTextField.setText("");
+            return;
+        }
+        //
+        //         amount = Integer.parseInt(a);
+        //         price = Double.parseDouble(p);
+        addToInventory(n,amount,price);
+        JOptionPane.showMessageDialog(AddProductWindow, "Insert Successful","Input Status",JOptionPane.INFORMATION_MESSAGE);
+        nameTextField.setText("Product Name");
+        amountTextField.setText("Product Amount");
+        priceTextField.setText("Product Price");
+        AddProductWindow.dispose();
+
+    }//GEN-LAST:event_insertButtonActionPerformed
+
+    private void nameTextFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_nameTextFieldFocusGained
+        // TODO add your handling code here:
+        String n = nameTextField.getText();
+        if (n.equals("Product Name")) {
+            nameTextField.setText("");
+        }
+    }//GEN-LAST:event_nameTextFieldFocusGained
+
+    private void nameTextFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_nameTextFieldFocusLost
+        // TODO add your handling code here:
+        String n = nameTextField.getText();
+        if (n.equals("")) {
+            nameTextField.setText("Product Name");
+        }
+    }//GEN-LAST:event_nameTextFieldFocusLost
+
+    private void amountTextFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_amountTextFieldFocusGained
+        // TODO add your handling code here:
+        String n = amountTextField.getText();
+        if (n.equals("Product Amount")) {
+            amountTextField.setText("");
+        }
+    }//GEN-LAST:event_amountTextFieldFocusGained
+
+    private void amountTextFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_amountTextFieldFocusLost
+        // TODO add your handling code here:
+        String n = amountTextField.getText();
+        if (n.equals("")) {
+            amountTextField.setText("Product Amount");
+        }
+    }//GEN-LAST:event_amountTextFieldFocusLost
+
+    private void backButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backButtonActionPerformed
+        // TODO add your handling code here:
+        nameTextField.setText("Product Name");
+        amountTextField.setText("Product Amount");
+        priceTextField.setText("Product Price");
+        AddProductWindow.dispose();
+//        new MainWindow().setVisible(true);
+    }//GEN-LAST:event_backButtonActionPerformed
+
+    private void priceTextFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_priceTextFieldFocusGained
+        // TODO add your handling code here:
+        String n = priceTextField.getText();
+        if (n.equals("Product Price")) {
+            priceTextField.setText("");
+        }
+    }//GEN-LAST:event_priceTextFieldFocusGained
+
+    private void priceTextFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_priceTextFieldFocusLost
+        // TODO add your handling code here:
+        String n = priceTextField.getText();
+        if (n.equals("")) {
+            priceTextField.setText("Product Price");
+        }
+    }//GEN-LAST:event_priceTextFieldFocusLost
+
+    private void AddProductWindowWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_AddProductWindowWindowClosed
+        // TODO add your handling code here:
+        nameTextField.setText("Product Name");
+        amountTextField.setText("Product Amount");
+        priceTextField.setText("Product Price");
+        clearTable();
+        dm = x.populateProductTable();
+        productTable.setModel(dm);
+    }//GEN-LAST:event_AddProductWindowWindowClosed
+
+    
     /**
      * @param args the command line arguments
      */
@@ -166,12 +447,20 @@ public class MainWindow extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(() -> new MainWindow().setVisible(true));
     }
+    
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JDialog AddProductWindow;
     private javax.swing.JTextField SearchField;
     private javax.swing.JButton addProductButton;
+    private javax.swing.JTextField amountTextField;
+    private javax.swing.JButton backButton;
+    private javax.swing.JButton insertButton;
     private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JTextField nameTextField;
     private javax.swing.JButton newTableButton;
+    private javax.swing.JTextField priceTextField;
     private javax.swing.JTable productTable;
     // End of variables declaration//GEN-END:variables
 }

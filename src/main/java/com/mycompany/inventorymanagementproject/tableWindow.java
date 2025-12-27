@@ -7,10 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
 import java.util.Vector;
-import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 /**
@@ -21,6 +18,7 @@ public class tableWindow extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(tableWindow.class.getName());
     private populateTable popu = new populateTable();
+    private DefaultTableModel dm = new DefaultTableModel();
 
     
     private Connection conn = DatabaseConnection.getConnection();
@@ -37,7 +35,13 @@ public class tableWindow extends javax.swing.JFrame {
     }
     
     private DefaultTableModel populateList() {
-        DefaultTableModel dm = new DefaultTableModel();
+        dm = new DefaultTableModel() {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                //all cells false
+                return false;
+            }
+        };
         
         String sql = "SELECT * FROM currentList;";
         Vector colNames = new Vector();
@@ -120,7 +124,7 @@ public class tableWindow extends javax.swing.JFrame {
                                     stmt3.setInt(2,amount);
                                     stmt3.setDouble(3,price*amount);
                                     stmt3.executeUpdate();
-                                    DefaultTableModel dm =populateList();
+                                    dm =populateList();
                                     currentProductList.setModel(dm);
 
                                 }
@@ -144,7 +148,7 @@ public class tableWindow extends javax.swing.JFrame {
                                     stmt3.setInt(2, newAmount);
                                     stmt3.setString(3, name);
                                     stmt3.executeUpdate();
-                                    DefaultTableModel dm =populateList();
+                                    dm =populateList();
                                     currentProductList.setModel(dm);
 
                                 }
@@ -164,15 +168,24 @@ public class tableWindow extends javax.swing.JFrame {
     } 
     
     private void removeFromList(String name) {
-        String sql = "DELETE FROM invetorydb.currentList WHERE Product = ?";
+        String setSafetyModeOff = "SET SQL_SAFE_UPDATES = 0;";
+        try (PreparedStatement stmt = conn.prepareStatement(setSafetyModeOff)) {
+            stmt.executeUpdate();
+        } catch (SQLException ex) { 
+            System.getLogger(tableWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+        
+        String sql = "DELETE FROM currentList WHERE Product = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)){
             pstmt.setString(1,name);
             
             pstmt.executeUpdate();
-
+            
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        dm =populateList();
+        currentProductList.setModel(dm);
     }
     
     private double totalCostUpdate() {
@@ -193,6 +206,23 @@ public class tableWindow extends javax.swing.JFrame {
         }
         return total;
     }
+    
+    private int totalAmountUpdate() {
+        String sql = "SELECT SUM(Amount) as total FROM currentList;";
+        int total = 0;
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while(rs.next()) {
+                    total += rs.getInt("total");
+                }
+            }
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return total;
+    }
     /**
      * Creates new form tableWindow
      */
@@ -205,7 +235,7 @@ public class tableWindow extends javax.swing.JFrame {
             System.exit(1);
         }
         
-        DefaultTableModel dm = popu.populateProductTable();
+        dm = popu.populateProductTable();
         productTable.setModel(dm);
         
         clearList();
@@ -316,7 +346,7 @@ public class tableWindow extends javax.swing.JFrame {
         });
 
         productAmountField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        productAmountField.setText("Product Ordered");
+        productAmountField.setText("Product Amount");
         productAmountField.setToolTipText("");
         productAmountField.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent evt) {
@@ -450,7 +480,6 @@ public class tableWindow extends javax.swing.JFrame {
         String n = productNameField.getText();
         String a = productAmountField.getText();
         int amountint;
-        double cost = 0;
         
         //check if input into product ordered is integer or not
         // Source - https://stackoverflow.com/a
@@ -459,28 +488,28 @@ public class tableWindow extends javax.swing.JFrame {
 
          try {
            int x = Integer.parseInt(a); 
-           System.out.println("Valid input");
          }catch(NumberFormatException e) {
            JOptionPane.showMessageDialog(this, "Please Enter ONLY Integer Values Into Products Ordered","Input Error",JOptionPane.ERROR_MESSAGE); 
            productAmountField.setText("");
          } 
 
         
-        if (n.equals("Product Name") &&a.equals("Product Ordered") ) {
-            JOptionPane.showMessageDialog(this, "Please Enter a Product Name and Product Ordered","Input Error",JOptionPane.ERROR_MESSAGE);
+        if (n.equals("Product Name") &&a.equals("Product Amount") ) {
+            JOptionPane.showMessageDialog(this, "Please Enter a Product Name and Product Amounts","Input Error",JOptionPane.ERROR_MESSAGE);
         }
         else if (n.equals("Product Name")) {
             JOptionPane.showMessageDialog(this, "Please Enter a Product Name","Input Error",JOptionPane.ERROR_MESSAGE);
-        } else if (a.equals("Product Ordered")) {
-            JOptionPane.showMessageDialog(this, "Please Enter Product Ordered","Input Error",JOptionPane.ERROR_MESSAGE);
+        } else if (a.equals("Product Amount")) {
+            JOptionPane.showMessageDialog(this, "Please Enter Product Amount","Input Error",JOptionPane.ERROR_MESSAGE);
         } 
         else {
             amountint = Integer.parseInt(a);
             addToList(n,amountint);
             productNameField.setText("Product Name");
-            productAmountField.setText("Product Ordered");
+            productAmountField.setText("Product Amount");
         }
         
+        totalAmountField.setText(Integer.toString(totalAmountUpdate()));
         totalCostField.setText(Double.toString(totalCostUpdate()));
         
         
@@ -489,45 +518,51 @@ public class tableWindow extends javax.swing.JFrame {
     private void productAmountFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_productAmountFieldFocusGained
         // TODO add your handling code here:
         String text = productAmountField.getText();
-        if (text.equals("Product Ordered")) {
+        if (text.equals("Product Amount")) {
             productAmountField.setText("");
         }
     }//GEN-LAST:event_productAmountFieldFocusGained
 
     private void searchProductFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_searchProductFieldKeyTyped
         // TODO add your handling code here: TEST IF SEARCH FIELD WORKS
+        //THIS IS NOT WORKINGGGGG
         String text = searchProductField.getText();
-        DefaultTableModel dm = new DefaultTableModel();
-        String sql = "SELECT * FROM inventorydb.products WHERE itemName LIKE '%?%'";
         
-        Vector colNames = new Vector();
-        colNames.add("Product ID");
-        colNames.add("Product Name");
-        colNames.add("Amount");
-        colNames.add("Date Added");
+        dm = popu.populateSearchTable(text);
+        productTable.setModel(dm);
         
-        dm.setColumnIdentifiers(colNames);
         
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
-            pstmt.setString(1,text);
-            
-            
-            try(ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    int id = rs.getInt("itemID");
-                    String name = rs.getString("itemName");
-                    int amount = rs.getInt("itemAmount");
-                    Timestamp date = rs.getTimestamp("dateAdded");
-                    
-                    Object[] rowData = {id,name,amount,date};
-                    dm.addRow(rowData);
-                    currentProductList.setModel(dm);
-                }
-            }
-            
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        
+//        String sql = "SELECT * FROM inventorydb.products WHERE itemName LIKE '%?%'";
+//        
+//        Vector colNames = new Vector();
+//        colNames.add("Product ID");
+//        colNames.add("Product Name");
+//        colNames.add("Amount");
+//        colNames.add("Date Added");
+//        
+//        dm.setColumnIdentifiers(colNames);
+//        
+//        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
+//            pstmt.setString(1,text);
+//            
+//            
+//            try(ResultSet rs = pstmt.executeQuery()) {
+//                while (rs.next()) {
+//                    int id = rs.getInt("itemID");
+//                    String name = rs.getString("itemName");
+//                    int amount = rs.getInt("itemAmount");
+//                    Timestamp date = rs.getTimestamp("dateAdded");
+//                    
+//                    Object[] rowData = {id,name,amount,date};
+//                    dm.addRow(rowData);
+//                    currentProductList.setModel(dm);
+//                }
+//            }
+//            
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//        }
     }//GEN-LAST:event_searchProductFieldKeyTyped
 
     private void searchProductFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_searchProductFieldFocusGained
@@ -551,15 +586,18 @@ public class tableWindow extends javax.swing.JFrame {
         String n = productNameField.getText();
         String a = productAmountField.getText();
         
-        if (n.equals("Product Name") &&a.equals("Product Ordered") ) {
+        System.out.println(a + n);
+        
+        if (n.equals("Product Name") &&a.equals("Product Amount") ) {
             JOptionPane.showMessageDialog(this, "No Product To Remove","Remove Error",JOptionPane.ERROR_MESSAGE);
-        }else if (n.equals("Product Name") ||a.equals("Product Ordered") ) {
+        }else if (n.equals("Product Name") ||a.equals("Product Amount") ) {
             JOptionPane.showMessageDialog(this, "Please select an available product from the available ","Remove Error",JOptionPane.ERROR_MESSAGE);
         } else {
             removeFromList(n);
-        
             productNameField.setText("Product Name");
-            productAmountField.setText("Product Ordered");
+            productAmountField.setText("Product Amount");
+            totalAmountField.setText(Integer.toString(totalAmountUpdate()));
+            totalCostField.setText(Double.toString(totalCostUpdate()));
         }
         
     }//GEN-LAST:event_removeButtonActionPerformed
@@ -586,7 +624,7 @@ public class tableWindow extends javax.swing.JFrame {
         // TODO add your handling code here:
         String text = productAmountField.getText();
         if (text.equals("")) {
-            productAmountField.setText("Product Ordered");
+            productAmountField.setText("Product Amount");
         }
     }//GEN-LAST:event_productAmountFieldFocusLost
 

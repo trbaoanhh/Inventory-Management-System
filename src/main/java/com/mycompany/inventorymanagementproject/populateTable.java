@@ -20,13 +20,58 @@ import javax.swing.table.DefaultTableModel;
  */
 public class populateTable {
     private Connection conn = DatabaseConnection.getConnection();
-    private DefaultTableModel prodTM = new DefaultTableModel();
+    private DefaultTableModel prodTM;
+
+    public populateTable() {
+        //to make the table non-editable for users
+        this.prodTM = new DefaultTableModel() {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                //all cells false
+                return false;
+            }
+        };
+    }
+    
+    //ADD ANOTHER FUNCTION THAT TAKES IN DIFFERENT PARAMENETERS
+    public DefaultTableModel populateSearchTable(String itemName) {
+        String sql = "SELECT * FROM products WHERE itemName LIKE '?'";
+        
+        Vector colNames = new Vector();
+        colNames.add("Product ID");
+        colNames.add("Product Name");
+        colNames.add("Amount");
+        colNames.add("Date Added");
+        colNames.add("Product Price");
+        
+        prodTM.setColumnIdentifiers(colNames);
+        
+        try(PreparedStatement pstmt = conn.prepareStatement(sql)){
+            pstmt.setString(1,"%"+itemName+"%");
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    int id = rs.getInt("itemID");
+                    String name = rs.getString("itemName");
+                    double amount = rs.getDouble("itemAmount");
+                    Timestamp date = rs.getTimestamp("dateAdded");
+                    double price = rs.getDouble("itemPrice");
+                    
+                    Object[] rowData = {id,name,amount,date,price};
+                    prodTM.addRow(rowData);
+                }
+            }
+        } catch (SQLException ex) {
+            System.getLogger(tableWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+        return prodTM;
+    }
     
     public DefaultTableModel populateProductTable() {
         String sql = "SELECT * FROM inventorydb.products ORDER BY dateAdded DESC";
         
         Vector colNames = new Vector();
-        colNames.add("Product ID");
+//        colNames.add("Product ID");
         colNames.add("Product Name");
         colNames.add("Amount");
         colNames.add("Date Added");
@@ -40,14 +85,14 @@ public class populateTable {
         
             try(ResultSet rs = pstmt.executeQuery()) {
                 while(rs.next()) {
-                    int id = rs.getInt("itemID");
+//                    int id = rs.getInt("itemID");
                     String name = rs.getString("itemName");
                     int amount = rs.getInt("itemAmount");
                     Timestamp date = rs.getTimestamp("dateAdded");
                     double price = rs.getDouble("itemPrice");
                     
             
-                    Object[] rowData = {id,name,amount,date,price};
+                    Object[] rowData = {name,amount,date,price};
                     prodTM.addRow(rowData);
             
                 }
