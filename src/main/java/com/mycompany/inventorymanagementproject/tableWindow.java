@@ -3,6 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package com.mycompany.inventorymanagementproject;
+import static java.awt.event.KeyEvent.VK_DELETE;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -23,7 +24,7 @@ public class tableWindow extends javax.swing.JFrame {
     
     private Connection conn = DatabaseConnection.getConnection();
     
-    private void clearList() {
+    private void removeAllFromList() {
         String sql = "DELETE FROM inventorydb.currentList";
         
         try(PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -32,6 +33,11 @@ public class tableWindow extends javax.swing.JFrame {
         }catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+    
+    private void clearTable() {
+        dm.setRowCount(0);
+        productTable.setModel(dm);
     }
     
     private DefaultTableModel populateList() {
@@ -223,6 +229,8 @@ public class tableWindow extends javax.swing.JFrame {
         }
         return total;
     }
+    
+   //-------------------------------------------------------------------------------------------------------
     /**
      * Creates new form tableWindow
      */
@@ -238,7 +246,7 @@ public class tableWindow extends javax.swing.JFrame {
         dm = popu.populateProductTable();
         productTable.setModel(dm);
         
-        clearList();
+        removeAllFromList();
         DefaultTableModel dm1 = populateList();
         currentProductList.setModel(dm1);
     }
@@ -297,8 +305,8 @@ public class tableWindow extends javax.swing.JFrame {
             }
         });
         searchProductField.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyTyped(java.awt.event.KeyEvent evt) {
-                searchProductFieldKeyTyped(evt);
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                searchProductFieldKeyReleased(evt);
             }
         });
 
@@ -457,6 +465,7 @@ public class tableWindow extends javax.swing.JFrame {
 
     private void backButonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backButonActionPerformed
         // TODO add your handling code here:
+        // Get rid of this current window
         this.dispose();
         
     }//GEN-LAST:event_backButonActionPerformed
@@ -468,10 +477,12 @@ public class tableWindow extends javax.swing.JFrame {
     private void productTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_productTableMouseClicked
         // TODO add your handling code here:
         
+        // when user select a product from the table on the right, the chosen product's name will be displayed
+        // in the product name field.
         //Code gotten from: https://www.youtube.com/watch?v=3_QuB8heXkw
         int row = productTable.getSelectedRow();
         DefaultTableModel model = (DefaultTableModel)productTable.getModel();
-        productNameField.setText(model.getValueAt(row,1).toString());
+        productNameField.setText(model.getValueAt(row,0).toString());
 
     }//GEN-LAST:event_productTableMouseClicked
 
@@ -481,7 +492,8 @@ public class tableWindow extends javax.swing.JFrame {
         String a = productAmountField.getText();
         int amountint;
         
-        //check if input into product ordered is integer or not
+        // Check if input into product ordered is integer or not
+        
         // Source - https://stackoverflow.com/a
         // Posted by Ruchira Gayan Ranaweera
         // Retrieved 2025-12-15, License - CC BY-SA 3.0
@@ -493,6 +505,7 @@ public class tableWindow extends javax.swing.JFrame {
            productAmountField.setText("");
          } 
 
+        //Check if there are things entered into the fields, if not i want the default texts to display
         
         if (n.equals("Product Name") &&a.equals("Product Amount") ) {
             JOptionPane.showMessageDialog(this, "Please Enter a Product Name and Product Amounts","Input Error",JOptionPane.ERROR_MESSAGE);
@@ -503,12 +516,14 @@ public class tableWindow extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Please Enter Product Amount","Input Error",JOptionPane.ERROR_MESSAGE);
         } 
         else {
+            //if all the validations are good, then i will add the item inputted inot the list on the left
             amountint = Integer.parseInt(a);
             addToList(n,amountint);
             productNameField.setText("Product Name");
             productAmountField.setText("Product Amount");
         }
         
+        //update the total amount of products used and also the total cost
         totalAmountField.setText(Integer.toString(totalAmountUpdate()));
         totalCostField.setText(Double.toString(totalCostUpdate()));
         
@@ -523,48 +538,6 @@ public class tableWindow extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_productAmountFieldFocusGained
 
-    private void searchProductFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_searchProductFieldKeyTyped
-        // TODO add your handling code here: TEST IF SEARCH FIELD WORKS
-        //THIS IS NOT WORKINGGGGG
-        String text = searchProductField.getText();
-        
-        dm = popu.populateSearchTable(text);
-        productTable.setModel(dm);
-        
-        
-        
-//        String sql = "SELECT * FROM inventorydb.products WHERE itemName LIKE '%?%'";
-//        
-//        Vector colNames = new Vector();
-//        colNames.add("Product ID");
-//        colNames.add("Product Name");
-//        colNames.add("Amount");
-//        colNames.add("Date Added");
-//        
-//        dm.setColumnIdentifiers(colNames);
-//        
-//        try (PreparedStatement pstmt = conn.prepareStatement(sql)){
-//            pstmt.setString(1,text);
-//            
-//            
-//            try(ResultSet rs = pstmt.executeQuery()) {
-//                while (rs.next()) {
-//                    int id = rs.getInt("itemID");
-//                    String name = rs.getString("itemName");
-//                    int amount = rs.getInt("itemAmount");
-//                    Timestamp date = rs.getTimestamp("dateAdded");
-//                    
-//                    Object[] rowData = {id,name,amount,date};
-//                    dm.addRow(rowData);
-//                    currentProductList.setModel(dm);
-//                }
-//            }
-//            
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//        }
-    }//GEN-LAST:event_searchProductFieldKeyTyped
-
     private void searchProductFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_searchProductFieldFocusGained
         // TODO add your handling code here:
         String text = searchProductField.getText();
@@ -576,7 +549,7 @@ public class tableWindow extends javax.swing.JFrame {
     private void searchProductFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_searchProductFieldFocusLost
         // TODO add your handling code here:
         String text = searchProductField.getText();
-        if (text.equals("")) {
+        if (text.isEmpty()) {
             searchProductField.setText("Search product...");
         }
     }//GEN-LAST:event_searchProductFieldFocusLost
@@ -623,7 +596,7 @@ public class tableWindow extends javax.swing.JFrame {
     private void productAmountFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_productAmountFieldFocusLost
         // TODO add your handling code here:
         String text = productAmountField.getText();
-        if (text.equals("")) {
+        if (text.isEmpty()) {
             productAmountField.setText("Product Amount");
         }
     }//GEN-LAST:event_productAmountFieldFocusLost
@@ -631,10 +604,23 @@ public class tableWindow extends javax.swing.JFrame {
     private void productNameFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_productNameFieldFocusLost
         // TODO add your handling code here:
         String n = productNameField.getText();
-        if (n.equals("")) {
+        if (n.isEmpty()) {
             productNameField.setText("Product Name");
         }
     }//GEN-LAST:event_productNameFieldFocusLost
+
+    private void searchProductFieldKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_searchProductFieldKeyReleased
+        // TODO add your handling code here:
+        String text = searchProductField.getText().trim();
+        clearTable();
+        if (text.isEmpty()) {
+            dm = popu.populateProductTable();
+        } else{
+            dm = popu.populateSearchTable(text);
+            
+        }
+        productTable.setModel(dm);
+    }//GEN-LAST:event_searchProductFieldKeyReleased
 
     /**
      * @param args the command line arguments

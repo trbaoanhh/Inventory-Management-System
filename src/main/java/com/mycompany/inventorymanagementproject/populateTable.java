@@ -35,10 +35,10 @@ public class populateTable {
     
     //ADD ANOTHER FUNCTION THAT TAKES IN DIFFERENT PARAMENETERS
     public DefaultTableModel populateSearchTable(String itemName) {
-        String sql = "SELECT * FROM products WHERE itemName LIKE '?'";
+        String sql = "SELECT * FROM inventorydb.products WHERE itemName LIKE ?";
         
         Vector colNames = new Vector();
-        colNames.add("Product ID");
+//        colNames.add("Product ID");
         colNames.add("Product Name");
         colNames.add("Amount");
         colNames.add("Date Added");
@@ -48,16 +48,18 @@ public class populateTable {
         
         try(PreparedStatement pstmt = conn.prepareStatement(sql)){
             pstmt.setString(1,"%"+itemName+"%");
+//              pstmt.setString(1,itemName);
+
             
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    int id = rs.getInt("itemID");
+//                    int id = rs.getInt("itemID");
                     String name = rs.getString("itemName");
                     double amount = rs.getDouble("itemAmount");
                     Timestamp date = rs.getTimestamp("dateAdded");
                     double price = rs.getDouble("itemPrice");
                     
-                    Object[] rowData = {id,name,amount,date,price};
+                    Object[] rowData = {name,amount,date,price};
                     prodTM.addRow(rowData);
                 }
             }

@@ -136,6 +136,8 @@ public class MainWindow extends javax.swing.JFrame {
         productTable = new javax.swing.JTable();
         newTableButton = new javax.swing.JButton();
         addProductButton = new javax.swing.JButton();
+        removeProductButton = new javax.swing.JButton();
+        editProductButton = new javax.swing.JButton();
 
         AddProductWindow.addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosed(java.awt.event.WindowEvent evt) {
@@ -234,6 +236,19 @@ public class MainWindow extends javax.swing.JFrame {
 
         SearchField.setText("Search...");
         SearchField.setToolTipText("");
+        SearchField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                SearchFieldFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                SearchFieldFocusLost(evt);
+            }
+        });
+        SearchField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                SearchFieldKeyReleased(evt);
+            }
+        });
 
         productTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -262,6 +277,20 @@ public class MainWindow extends javax.swing.JFrame {
             }
         });
 
+        removeProductButton.setText("Remove Product");
+        removeProductButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                removeProductButtonActionPerformed(evt);
+            }
+        });
+
+        editProductButton.setText("Edit Product");
+        editProductButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                editProductButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -275,7 +304,9 @@ public class MainWindow extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(newTableButton, javax.swing.GroupLayout.PREFERRED_SIZE, 156, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(addProductButton, javax.swing.GroupLayout.PREFERRED_SIZE, 156, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(addProductButton, javax.swing.GroupLayout.PREFERRED_SIZE, 156, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(removeProductButton, javax.swing.GroupLayout.PREFERRED_SIZE, 156, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(editProductButton, javax.swing.GroupLayout.PREFERRED_SIZE, 156, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(0, 6, Short.MAX_VALUE)))
                 .addContainerGap())
         );
@@ -289,7 +320,11 @@ public class MainWindow extends javax.swing.JFrame {
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                         .addComponent(newTableButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(addProductButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(addProductButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(removeProductButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(editProductButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(13, Short.MAX_VALUE))
         );
@@ -340,7 +375,7 @@ public class MainWindow extends javax.swing.JFrame {
             }
         }catch(NumberFormatException e) {
             JOptionPane.showMessageDialog(AddProductWindow, "Please Enter ONLY Integer Values Into Product Ordered And Double Values Into Product Price","Input Error",JOptionPane.ERROR_MESSAGE);
-            nameTextField.setText("");
+//            nameTextField.setText("");
             return;
         }
         //
@@ -366,7 +401,7 @@ public class MainWindow extends javax.swing.JFrame {
     private void nameTextFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_nameTextFieldFocusLost
         // TODO add your handling code here:
         String n = nameTextField.getText();
-        if (n.equals("")) {
+        if (n.isEmpty()) {
             nameTextField.setText("Product Name");
         }
     }//GEN-LAST:event_nameTextFieldFocusLost
@@ -382,7 +417,7 @@ public class MainWindow extends javax.swing.JFrame {
     private void amountTextFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_amountTextFieldFocusLost
         // TODO add your handling code here:
         String n = amountTextField.getText();
-        if (n.equals("")) {
+        if (n.isEmpty()) {
             amountTextField.setText("Product Amount");
         }
     }//GEN-LAST:event_amountTextFieldFocusLost
@@ -407,7 +442,7 @@ public class MainWindow extends javax.swing.JFrame {
     private void priceTextFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_priceTextFieldFocusLost
         // TODO add your handling code here:
         String n = priceTextField.getText();
-        if (n.equals("")) {
+        if (n.isEmpty()) {
             priceTextField.setText("Product Price");
         }
     }//GEN-LAST:event_priceTextFieldFocusLost
@@ -421,6 +456,44 @@ public class MainWindow extends javax.swing.JFrame {
         dm = x.populateProductTable();
         productTable.setModel(dm);
     }//GEN-LAST:event_AddProductWindowWindowClosed
+
+    private void removeProductButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeProductButtonActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_removeProductButtonActionPerformed
+
+    private void editProductButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editProductButtonActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_editProductButtonActionPerformed
+
+    private void SearchFieldKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_SearchFieldKeyReleased
+        // TODO add your handling code here:
+        String text = SearchField.getText().trim();
+        clearTable();
+        if (text.isEmpty()) {
+            dm = x.populateProductTable();
+        } else{
+            dm = x.populateSearchTable(text);
+            
+        }
+        productTable.setModel(dm);
+    }//GEN-LAST:event_SearchFieldKeyReleased
+
+    private void SearchFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_SearchFieldFocusGained
+        // TODO add your handling code here:
+        String x = SearchField.getText();
+        
+        if (x.equals("Search...")) {
+            SearchField.setText("");
+        }
+    }//GEN-LAST:event_SearchFieldFocusGained
+
+    private void SearchFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_SearchFieldFocusLost
+        // TODO add your handling code here:
+        String x = SearchField.getText();
+        if (x.isEmpty()) {
+            SearchField.setText("Search...");
+        }
+    }//GEN-LAST:event_SearchFieldFocusLost
 
     
     /**
@@ -456,11 +529,13 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JButton addProductButton;
     private javax.swing.JTextField amountTextField;
     private javax.swing.JButton backButton;
+    private javax.swing.JButton editProductButton;
     private javax.swing.JButton insertButton;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTextField nameTextField;
     private javax.swing.JButton newTableButton;
     private javax.swing.JTextField priceTextField;
     private javax.swing.JTable productTable;
+    private javax.swing.JButton removeProductButton;
     // End of variables declaration//GEN-END:variables
 }
