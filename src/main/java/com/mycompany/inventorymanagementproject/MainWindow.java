@@ -5,20 +5,11 @@
 package com.mycompany.inventorymanagementproject;
 
 import java.awt.Dimension;
-import java.awt.event.WindowEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.awt.event.WindowAdapter;
-import javax.swing.JFrame;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.util.Vector;
-//import javax.swing.DefaultListModel;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
-import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 /**
  *
@@ -29,6 +20,10 @@ public class MainWindow extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MainWindow.class.getName());
     private Connection conn = DatabaseConnection.getConnection();
     private DefaultTableModel dm;
+    private String amtstring;
+//    private int amt;
+    private int itemID;
+    private String itemName;
     
     private populateTable x = new populateTable();
    //fill ProductList with products, sorted by the latest added product
@@ -131,6 +126,13 @@ public class MainWindow extends javax.swing.JFrame {
         amountTextField = new javax.swing.JTextField();
         backButton = new javax.swing.JButton();
         priceTextField = new javax.swing.JTextField();
+        RemoveProductWindow = new javax.swing.JDialog();
+        backButtonRW = new javax.swing.JButton();
+        nameTextFieldRW = new javax.swing.JTextField();
+        amountTextFieldRW = new javax.swing.JTextField();
+        removeButtonRW = new javax.swing.JButton();
+        selectAllButton = new javax.swing.JButton();
+        deleteButtonRW = new javax.swing.JButton();
         SearchField = new javax.swing.JTextField();
         jScrollPane3 = new javax.swing.JScrollPane();
         productTable = new javax.swing.JTable();
@@ -193,10 +195,6 @@ public class MainWindow extends javax.swing.JFrame {
         AddProductWindow.getContentPane().setLayout(AddProductWindowLayout);
         AddProductWindowLayout.setHorizontalGroup(
             AddProductWindowLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(AddProductWindowLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(backButton, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, AddProductWindowLayout.createSequentialGroup()
                 .addGap(0, 20, Short.MAX_VALUE)
                 .addGroup(AddProductWindowLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -204,6 +202,10 @@ public class MainWindow extends javax.swing.JFrame {
                     .addComponent(amountTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(nameTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(20, 20, 20))
+            .addGroup(AddProductWindowLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(backButton, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, AddProductWindowLayout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(insertButton)
@@ -222,6 +224,101 @@ public class MainWindow extends javax.swing.JFrame {
                 .addComponent(priceTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(insertButton)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        RemoveProductWindow.addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosed(java.awt.event.WindowEvent evt) {
+                RemoveProductWindowWindowClosed(evt);
+            }
+        });
+
+        backButtonRW.setText("Back");
+        backButtonRW.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                backButtonRWActionPerformed(evt);
+            }
+        });
+
+        nameTextFieldRW.setText("Product Name");
+        nameTextFieldRW.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                nameTextFieldRWFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                nameTextFieldRWFocusLost(evt);
+            }
+        });
+
+        amountTextFieldRW.setText("Product Amount");
+        amountTextFieldRW.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                amountTextFieldRWFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                amountTextFieldRWFocusLost(evt);
+            }
+        });
+
+        removeButtonRW.setText("Remove");
+        removeButtonRW.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                removeButtonRWActionPerformed(evt);
+            }
+        });
+
+        selectAllButton.setText("Select All");
+        selectAllButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                selectAllButtonActionPerformed(evt);
+            }
+        });
+
+        deleteButtonRW.setText("Delete From Inventory");
+        deleteButtonRW.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                deleteButtonRWActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout RemoveProductWindowLayout = new javax.swing.GroupLayout(RemoveProductWindow.getContentPane());
+        RemoveProductWindow.getContentPane().setLayout(RemoveProductWindowLayout);
+        RemoveProductWindowLayout.setHorizontalGroup(
+            RemoveProductWindowLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(RemoveProductWindowLayout.createSequentialGroup()
+                .addGroup(RemoveProductWindowLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(RemoveProductWindowLayout.createSequentialGroup()
+                        .addGap(20, 20, 20)
+                        .addGroup(RemoveProductWindowLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(amountTextFieldRW, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(nameTextFieldRW, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(RemoveProductWindowLayout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(backButtonRW, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(20, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, RemoveProductWindowLayout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addGroup(RemoveProductWindowLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(selectAllButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(removeButtonRW, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(deleteButtonRW))
+                .addGap(37, 37, 37))
+        );
+        RemoveProductWindowLayout.setVerticalGroup(
+            RemoveProductWindowLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(RemoveProductWindowLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(backButtonRW)
+                .addGap(26, 26, 26)
+                .addComponent(nameTextFieldRW, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(amountTextFieldRW, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(selectAllButton)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(removeButtonRW)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(deleteButtonRW)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -261,6 +358,11 @@ public class MainWindow extends javax.swing.JFrame {
                 "Title 1", "Title 2", "Title 3", "Title 4"
             }
         ));
+        productTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                productTableMouseClicked(evt);
+            }
+        });
         jScrollPane3.setViewportView(productTable);
 
         newTableButton.setText("New Table");
@@ -459,6 +561,10 @@ public class MainWindow extends javax.swing.JFrame {
 
     private void removeProductButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeProductButtonActionPerformed
         // TODO add your handling code here:
+        RemoveProductWindow.setPreferredSize(new Dimension(240,300));
+        RemoveProductWindow.pack();
+        RemoveProductWindow.setLocationRelativeTo(null);
+        RemoveProductWindow.setVisible(true);
     }//GEN-LAST:event_removeProductButtonActionPerformed
 
     private void editProductButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editProductButtonActionPerformed
@@ -495,6 +601,106 @@ public class MainWindow extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_SearchFieldFocusLost
 
+    private void backButtonRWActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backButtonRWActionPerformed
+        // TODO add your handling code here:
+        nameTextFieldRW.setText("Product Name");
+        amountTextFieldRW.setText("Product Amount");
+        RemoveProductWindow.dispose();
+    }//GEN-LAST:event_backButtonRWActionPerformed
+
+    private void nameTextFieldRWFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_nameTextFieldRWFocusGained
+        // TODO add your handling code here:
+        String n = nameTextFieldRW.getText();
+        
+        if (n.equals("Product Name")) {
+            nameTextFieldRW.setText("");
+        }
+    }//GEN-LAST:event_nameTextFieldRWFocusGained
+
+    private void nameTextFieldRWFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_nameTextFieldRWFocusLost
+        // TODO add your handling code here:
+        String n = nameTextFieldRW.getText();
+        
+        if (n.isEmpty()) {
+            nameTextFieldRW.setText("Product Name");
+        }
+    }//GEN-LAST:event_nameTextFieldRWFocusLost
+
+    private void removeButtonRWActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeButtonRWActionPerformed
+        // TODO add your handling code here:
+        
+        int amount = Integer.parseInt(amountTextFieldRW.getText());
+        if (Integer.parseInt(amtstring)-amount < 0) {
+            JOptionPane.showMessageDialog(RemoveProductWindow, "Amount Removed Exceeds Current Amount","Remove Error",JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        String sql = "UPDATE inventorydb.products SET itemAmount = GREATEST(0,itemAmount - ?) WHERE itemName = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1,amount);
+            stmt.setString(2,itemName);
+            stmt.executeUpdate();
+        } catch (SQLException ex) {
+            System.getLogger(tableWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+        
+        nameTextFieldRW.setText("Product Name");
+        amountTextFieldRW.setText("Product Amount");
+        RemoveProductWindow.dispose();      
+    }//GEN-LAST:event_removeButtonRWActionPerformed
+
+    private void amountTextFieldRWFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_amountTextFieldRWFocusLost
+        // TODO add your handling code here:
+        String n = amountTextFieldRW.getText();
+
+        if (n.isEmpty()) {
+            amountTextFieldRW.setText("Product Amount");
+        }
+    }//GEN-LAST:event_amountTextFieldRWFocusLost
+
+    private void amountTextFieldRWFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_amountTextFieldRWFocusGained
+        // TODO add your handling code here:
+        String n = amountTextFieldRW.getText();
+
+        if (n.equals("Product Amount")) {
+            amountTextFieldRW.setText("");
+        }
+    }//GEN-LAST:event_amountTextFieldRWFocusGained
+
+    private void productTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_productTableMouseClicked
+        // TODO add your handling code here:
+        int row = productTable.getSelectedRow();
+        DefaultTableModel model = (DefaultTableModel)productTable.getModel();
+        RemoveProductWindow.setPreferredSize(new Dimension(240,300));
+        RemoveProductWindow.pack();
+        RemoveProductWindow.setLocationRelativeTo(null);
+        RemoveProductWindow.setVisible(true);
+        nameTextFieldRW.setText(model.getValueAt(row,0).toString());
+//        amt = (int) model.getValueAt(row,1);
+        amtstring = model.getValueAt(row,1).toString();
+//        itemID = (int) model.getValueAt(row,0);
+itemName = model.getValueAt(row,0).toString();
+    }//GEN-LAST:event_productTableMouseClicked
+
+    private void selectAllButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_selectAllButtonActionPerformed
+        // TODO add your handling code here:
+        amountTextFieldRW.setText(amtstring);
+    }//GEN-LAST:event_selectAllButtonActionPerformed
+
+    private void deleteButtonRWActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteButtonRWActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_deleteButtonRWActionPerformed
+
+    private void RemoveProductWindowWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_RemoveProductWindowWindowClosed
+        // TODO add your handling code here:
+        nameTextFieldRW.setText("Product Name");
+        amountTextFieldRW.setText("Product Amount");
+//        System.out.println("Closed successfully");
+        clearTable();
+        dm = x.populateProductTable();
+        productTable.setModel(dm);
+    }//GEN-LAST:event_RemoveProductWindowWindowClosed
+
     
     /**
      * @param args the command line arguments
@@ -525,17 +731,24 @@ public class MainWindow extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JDialog AddProductWindow;
+    private javax.swing.JDialog RemoveProductWindow;
     private javax.swing.JTextField SearchField;
     private javax.swing.JButton addProductButton;
     private javax.swing.JTextField amountTextField;
+    private javax.swing.JTextField amountTextFieldRW;
     private javax.swing.JButton backButton;
+    private javax.swing.JButton backButtonRW;
+    private javax.swing.JButton deleteButtonRW;
     private javax.swing.JButton editProductButton;
     private javax.swing.JButton insertButton;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTextField nameTextField;
+    private javax.swing.JTextField nameTextFieldRW;
     private javax.swing.JButton newTableButton;
     private javax.swing.JTextField priceTextField;
     private javax.swing.JTable productTable;
+    private javax.swing.JButton removeButtonRW;
     private javax.swing.JButton removeProductButton;
+    private javax.swing.JButton selectAllButton;
     // End of variables declaration//GEN-END:variables
 }
