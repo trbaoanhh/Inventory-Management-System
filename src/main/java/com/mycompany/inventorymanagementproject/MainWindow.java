@@ -20,10 +20,10 @@ public class MainWindow extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MainWindow.class.getName());
     private Connection conn = DatabaseConnection.getConnection();
     private DefaultTableModel dm;
-    private String amtstring;
+    private int amtK;
 //    private int amt;
-    private int itemID;
-    private String itemName;
+//    private int itemID;
+//    private String itemName;
     
     private populateTable x = new populateTable();
    //fill ProductList with products, sorted by the latest added product
@@ -54,6 +54,38 @@ public class MainWindow extends javax.swing.JFrame {
         productTable.setModel(dm);
     }
     
+    private void reset() {
+        clearTable();
+        dm = x.populateProductTable();
+        productTable.setModel(dm);
+    }
+    private String findPrice(String name) {
+        String price = "Prior Price";
+        String sql = "SELECT itemPrice FROM products WHERE itemName = ? ";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1,name);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    double x = rs.getDouble("itemPrice");
+                    price = String.valueOf(x);
+                } 
+            }
+        } catch (SQLException e) {
+            System.getLogger(tableWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, e);
+        }
+        return price;
+    }
+    
+    private void updatePrice(String name, String price) {
+        String sql = "UPDATE products SET itemPrice = ? WHERE itemName = ?";
+        try(PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setDouble(1,Double.parseDouble(price));
+            stmt.setString(2, name);
+            stmt.executeUpdate();
+        } catch (SQLException ex) {
+            System.getLogger(MainWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+    } 
     private boolean productExists(String name) {
         String ifAlreadyExists = "SELECT itemAmount FROM products WHERE itemName = ?";
         try (PreparedStatement stmt = conn.prepareStatement(ifAlreadyExists)) {
@@ -133,13 +165,19 @@ public class MainWindow extends javax.swing.JFrame {
         removeButtonRW = new javax.swing.JButton();
         selectAllButton = new javax.swing.JButton();
         deleteButtonRW = new javax.swing.JButton();
+        EditPriceWindow = new javax.swing.JDialog();
+        backButtonEP = new javax.swing.JButton();
+        itemNameTextField = new javax.swing.JTextField();
+        PriorPriceTextField = new javax.swing.JTextField();
+        PostPriceTextField = new javax.swing.JTextField();
+        EnterButton = new javax.swing.JButton();
         SearchField = new javax.swing.JTextField();
         jScrollPane3 = new javax.swing.JScrollPane();
         productTable = new javax.swing.JTable();
         newTableButton = new javax.swing.JButton();
         addProductButton = new javax.swing.JButton();
         removeProductButton = new javax.swing.JButton();
-        editProductButton = new javax.swing.JButton();
+        editPriceButton = new javax.swing.JButton();
 
         AddProductWindow.addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosed(java.awt.event.WindowEvent evt) {
@@ -322,6 +360,78 @@ public class MainWindow extends javax.swing.JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
+        backButtonEP.setText("Back");
+        backButtonEP.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                backButtonEPActionPerformed(evt);
+            }
+        });
+
+        itemNameTextField.setText("Product Name");
+        itemNameTextField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                itemNameTextFieldFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                itemNameTextFieldFocusLost(evt);
+            }
+        });
+
+        PriorPriceTextField.setText("Prior Price");
+
+        PostPriceTextField.setText("Enter Price");
+        PostPriceTextField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                PostPriceTextFieldFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                PostPriceTextFieldFocusLost(evt);
+            }
+        });
+
+        EnterButton.setText("Enter");
+        EnterButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                EnterButtonActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout EditPriceWindowLayout = new javax.swing.GroupLayout(EditPriceWindow.getContentPane());
+        EditPriceWindow.getContentPane().setLayout(EditPriceWindowLayout);
+        EditPriceWindowLayout.setHorizontalGroup(
+            EditPriceWindowLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(EditPriceWindowLayout.createSequentialGroup()
+                .addGroup(EditPriceWindowLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(EditPriceWindowLayout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(backButtonEP, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(EditPriceWindowLayout.createSequentialGroup()
+                        .addGap(22, 22, 22)
+                        .addGroup(EditPriceWindowLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(PriorPriceTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 227, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(itemNameTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 227, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(PostPriceTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 227, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(EditPriceWindowLayout.createSequentialGroup()
+                        .addGap(99, 99, 99)
+                        .addComponent(EnterButton)))
+                .addContainerGap(21, Short.MAX_VALUE))
+        );
+        EditPriceWindowLayout.setVerticalGroup(
+            EditPriceWindowLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(EditPriceWindowLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(backButtonEP)
+                .addGap(18, 18, 18)
+                .addComponent(itemNameTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(PriorPriceTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(PostPriceTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(EnterButton)
+                .addContainerGap(14, Short.MAX_VALUE))
+        );
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         addWindowFocusListener(new java.awt.event.WindowFocusListener() {
             public void windowGainedFocus(java.awt.event.WindowEvent evt) {
@@ -386,10 +496,10 @@ public class MainWindow extends javax.swing.JFrame {
             }
         });
 
-        editProductButton.setText("Edit Product");
-        editProductButton.addActionListener(new java.awt.event.ActionListener() {
+        editPriceButton.setText("Edit Price");
+        editPriceButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                editProductButtonActionPerformed(evt);
+                editPriceButtonActionPerformed(evt);
             }
         });
 
@@ -408,7 +518,7 @@ public class MainWindow extends javax.swing.JFrame {
                             .addComponent(newTableButton, javax.swing.GroupLayout.PREFERRED_SIZE, 156, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(addProductButton, javax.swing.GroupLayout.PREFERRED_SIZE, 156, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(removeProductButton, javax.swing.GroupLayout.PREFERRED_SIZE, 156, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(editProductButton, javax.swing.GroupLayout.PREFERRED_SIZE, 156, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(editPriceButton, javax.swing.GroupLayout.PREFERRED_SIZE, 156, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(0, 6, Short.MAX_VALUE)))
                 .addContainerGap())
         );
@@ -426,7 +536,7 @@ public class MainWindow extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(removeProductButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(editProductButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(editPriceButton, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(13, Short.MAX_VALUE))
         );
@@ -489,6 +599,7 @@ public class MainWindow extends javax.swing.JFrame {
         amountTextField.setText("Product Amount");
         priceTextField.setText("Product Price");
         AddProductWindow.dispose();
+        reset();
 
     }//GEN-LAST:event_insertButtonActionPerformed
 
@@ -554,9 +665,7 @@ public class MainWindow extends javax.swing.JFrame {
         nameTextField.setText("Product Name");
         amountTextField.setText("Product Amount");
         priceTextField.setText("Product Price");
-        clearTable();
-        dm = x.populateProductTable();
-        productTable.setModel(dm);
+        reset();
     }//GEN-LAST:event_AddProductWindowWindowClosed
 
     private void removeProductButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeProductButtonActionPerformed
@@ -567,9 +676,13 @@ public class MainWindow extends javax.swing.JFrame {
         RemoveProductWindow.setVisible(true);
     }//GEN-LAST:event_removeProductButtonActionPerformed
 
-    private void editProductButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editProductButtonActionPerformed
+    private void editPriceButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editPriceButtonActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_editProductButtonActionPerformed
+        EditPriceWindow.setPreferredSize(new Dimension(280,300));
+        EditPriceWindow.pack();
+        EditPriceWindow.setLocationRelativeTo(null);
+        EditPriceWindow.setVisible(true);
+    }//GEN-LAST:event_editPriceButtonActionPerformed
 
     private void SearchFieldKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_SearchFieldKeyReleased
         // TODO add your handling code here:
@@ -630,7 +743,23 @@ public class MainWindow extends javax.swing.JFrame {
         // TODO add your handling code here:
         
         int amount = Integer.parseInt(amountTextFieldRW.getText());
-        if (Integer.parseInt(amtstring)-amount < 0) {
+        String itemName = nameTextFieldRW.getText();
+        int amtK = 0;
+        
+        String x = "SELECT itemAmount FROM products WHERE itemName = ?";
+        try(PreparedStatement stmt = conn.prepareStatement(x)) {
+            stmt.setString(1,itemName);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    amtK = rs.getInt("ItemAmount");
+                }
+       
+            }
+        } catch (SQLException ex) {        
+            System.getLogger(MainWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+        
+        if (amtK-amount < 0) {
             JOptionPane.showMessageDialog(RemoveProductWindow, "Amount Removed Exceeds Current Amount","Remove Error",JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -643,10 +772,9 @@ public class MainWindow extends javax.swing.JFrame {
         } catch (SQLException ex) {
             System.getLogger(tableWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
         }
+
+        RemoveProductWindow.dispose();
         
-        nameTextFieldRW.setText("Product Name");
-        amountTextFieldRW.setText("Product Amount");
-        RemoveProductWindow.dispose();      
     }//GEN-LAST:event_removeButtonRWActionPerformed
 
     private void amountTextFieldRWFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_amountTextFieldRWFocusLost
@@ -669,26 +797,53 @@ public class MainWindow extends javax.swing.JFrame {
 
     private void productTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_productTableMouseClicked
         // TODO add your handling code here:
-        int row = productTable.getSelectedRow();
-        DefaultTableModel model = (DefaultTableModel)productTable.getModel();
-        RemoveProductWindow.setPreferredSize(new Dimension(240,300));
-        RemoveProductWindow.pack();
-        RemoveProductWindow.setLocationRelativeTo(null);
-        RemoveProductWindow.setVisible(true);
-        nameTextFieldRW.setText(model.getValueAt(row,0).toString());
-//        amt = (int) model.getValueAt(row,1);
-        amtstring = model.getValueAt(row,1).toString();
-//        itemID = (int) model.getValueAt(row,0);
-itemName = model.getValueAt(row,0).toString();
+//        int row = productTable.getSelectedRow();
+//        DefaultTableModel model = (DefaultTableModel)productTable.getModel();
+//        RemoveProductWindow.setPreferredSize(new Dimension(240,300));
+//        RemoveProductWindow.pack();
+//        RemoveProductWindow.setLocationRelativeTo(null);
+//        RemoveProductWindow.setVisible(true);
+//        nameTextFieldRW.setText(model.getValueAt(row,0).toString());
+////        amt = (int) model.getValueAt(row,1);
+//        amtstring = model.getValueAt(row,1).toString();
+////        itemID = (int) model.getValueAt(row,0);
+//itemName = model.getValueAt(row,0).toString();
     }//GEN-LAST:event_productTableMouseClicked
 
     private void selectAllButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_selectAllButtonActionPerformed
         // TODO add your handling code here:
-        amountTextFieldRW.setText(amtstring);
+//        amountTextFieldRW.setText(amtstring);
+        String n = nameTextFieldRW.getText();
+        String sql = "SELECT itemAmount FROM products WHERE itemName = ?";
+        int amount = 0;
+        try(PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, n);
+            try(ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    amount = rs.getInt("itemAmount");
+                }
+                
+            }
+        } catch (SQLException ex) {
+            System.getLogger(MainWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+        String amt = Integer.toString(amount);
+        amtK = amount;
+        amountTextFieldRW.setText(amt);
     }//GEN-LAST:event_selectAllButtonActionPerformed
 
     private void deleteButtonRWActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteButtonRWActionPerformed
         // TODO add your handling code here:
+        String n = nameTextFieldRW.getText();
+        String sql = "DELETE FROM products WHERE itemName = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1,n);
+            stmt.executeQuery();
+        } catch (SQLException ex) {
+            System.getLogger(MainWindow.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+        
+        RemoveProductWindow.dispose();
     }//GEN-LAST:event_deleteButtonRWActionPerformed
 
     private void RemoveProductWindowWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_RemoveProductWindowWindowClosed
@@ -696,10 +851,67 @@ itemName = model.getValueAt(row,0).toString();
         nameTextFieldRW.setText("Product Name");
         amountTextFieldRW.setText("Product Amount");
 //        System.out.println("Closed successfully");
-        clearTable();
-        dm = x.populateProductTable();
-        productTable.setModel(dm);
+        reset();
     }//GEN-LAST:event_RemoveProductWindowWindowClosed
+
+    private void backButtonEPActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backButtonEPActionPerformed
+        // TODO add your handling code here:
+        PriorPriceTextField.setText("Prior Price");
+        PostPriceTextField.setText("Enter Price");
+        itemNameTextField.setText("Product");
+        EditPriceWindow.dispose();
+    }//GEN-LAST:event_backButtonEPActionPerformed
+
+    private void itemNameTextFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_itemNameTextFieldFocusGained
+        // TODO add your handling code here:
+        String n = itemNameTextField.getText();
+
+        if (n.equals("Product Name")) {
+            itemNameTextField.setText("");
+        } 
+    }//GEN-LAST:event_itemNameTextFieldFocusGained
+
+    private void itemNameTextFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_itemNameTextFieldFocusLost
+        // TODO add your handling code here:
+        String n = itemNameTextField.getText();
+
+        if (n.isEmpty()) {
+            itemNameTextField.setText("Product Name");
+        } else {
+            PriorPriceTextField.setText(findPrice(n));
+        }
+    }//GEN-LAST:event_itemNameTextFieldFocusLost
+
+    private void PostPriceTextFieldFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_PostPriceTextFieldFocusGained
+        // TODO add your handling code here:
+        String n = PostPriceTextField.getText();
+
+        if (n.equals("Enter Price")) {
+            PostPriceTextField.setText("");
+        }
+    }//GEN-LAST:event_PostPriceTextFieldFocusGained
+
+    private void PostPriceTextFieldFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_PostPriceTextFieldFocusLost
+        // TODO add your handling code here:
+        String n = PostPriceTextField.getText();
+
+        if (n.isEmpty()) {
+            PostPriceTextField.setText("Enter Price");
+        }
+    }//GEN-LAST:event_PostPriceTextFieldFocusLost
+
+    private void EnterButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterButtonActionPerformed
+        // TODO add your handling code here:
+        String n = itemNameTextField.getText();
+        String p = PostPriceTextField.getText();
+        updatePrice(n,p);
+        
+        PriorPriceTextField.setText("Prior Price");
+        PostPriceTextField.setText("Enter Price");
+        itemNameTextField.setText("Product");
+        EditPriceWindow.dispose();
+        reset();
+    }//GEN-LAST:event_EnterButtonActionPerformed
 
     
     /**
@@ -731,16 +943,22 @@ itemName = model.getValueAt(row,0).toString();
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JDialog AddProductWindow;
+    private javax.swing.JDialog EditPriceWindow;
+    private javax.swing.JButton EnterButton;
+    private javax.swing.JTextField PostPriceTextField;
+    private javax.swing.JTextField PriorPriceTextField;
     private javax.swing.JDialog RemoveProductWindow;
     private javax.swing.JTextField SearchField;
     private javax.swing.JButton addProductButton;
     private javax.swing.JTextField amountTextField;
     private javax.swing.JTextField amountTextFieldRW;
     private javax.swing.JButton backButton;
+    private javax.swing.JButton backButtonEP;
     private javax.swing.JButton backButtonRW;
     private javax.swing.JButton deleteButtonRW;
-    private javax.swing.JButton editProductButton;
+    private javax.swing.JButton editPriceButton;
     private javax.swing.JButton insertButton;
+    private javax.swing.JTextField itemNameTextField;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTextField nameTextField;
     private javax.swing.JTextField nameTextFieldRW;
